@@ -1,0 +1,24 @@
+services:
+  localstack:
+    image: localstack/localstack:latest
+    container_name: localstack
+    ports:
+      - "4566:4566"          # unified edge port
+    environment:
+      - LOCALSTACK_SERVICES=sts,s3,sqs,dynamodb,ssm,events
+      - LOCALSTACK_PERSISTENCE=1
+    volumes:
+      - localstack_data:/var/lib/localstack
+      - "/var/run/docker.sock:/var/run/docker.sock"
+
+  mongo:
+    image: mongo:6.0
+    container_name: nalukataq-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+volumes:
+  mongo_data:
+  localstack_data:
