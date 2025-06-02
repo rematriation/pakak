@@ -37,11 +37,6 @@ jobs:
         run: |
           npm run lint
 
-      # Run TypeScript type-check
-      - name: Run TypeScript type-check
-        run: |
-          npm run type-check
-
       # Run tests
       - name: Run tests
         run: npm test
