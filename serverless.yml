@@ -7,6 +7,8 @@ service: nalukataq
 variablesResolutionMode: 20210326
 useDotenv: true
 
+frameworkVersion: ~4.15.1
+
 # ───────── Global defaults & per-stage naming ─────────
 provider:
   name: aws
