@@ -17,35 +17,28 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Check out code
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # Set up Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18.x'
           cache: 'npm'
 
-      # Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # Run linter
       - name: Run linter
         run: |
           npm run lint
 
-      # Run tests
       - name: Run tests
         run: npm test
 
-      # Build project
       - name: Build project
         run: npm run build
 
-      # Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -53,10 +46,10 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      # Install Serverless Framework
       - name: Install Serverless Framework
         run: npm install --location=global serverless@^4.15.1
 
-      # Deploy to AWS
       - name: Deploy to AWS
+        env:
+          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
         run: npx serverless deploy --stage ${{ github.event.inputs.stage }} --verbose
