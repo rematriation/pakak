@@ -17,6 +17,9 @@ provider:
   stage: ${opt:stage, 'dev'}
   stackName: nalukataq-${self:provider.stage}
 
+  httpApi:
+    stage: ${self:provider.stage}
+
   environment:
     APP_STAGE: ${self:provider.stage}
 
