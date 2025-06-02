@@ -17,9 +17,6 @@ provider:
   stage: ${opt:stage, 'dev'}
   stackName: nalukataq-${self:provider.stage}
 
-  httpApi:
-    stage: ${self:provider.stage}
-
   environment:
     APP_STAGE: ${self:provider.stage}
 
@@ -74,7 +71,7 @@ functions:
     memorySize: 256
     timeout: 3
     events:
-      - httpApi: { path: /webhook, method: post }
+      - httpApi: { path: "/${self:provider.stage}/webhook", method: post }
 
   worker:
     handler: dist/functions/worker/handler.handler
