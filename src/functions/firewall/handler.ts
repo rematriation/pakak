@@ -1,13 +1,11 @@
-import {APIGatewayProxyHandlerV2, APIGatewayProxyResultV2} from 'aws-lambda';
+import { APIGatewayProxyHandlerV2, APIGatewayProxyResultV2 } from 'aws-lambda';
 
-export const handler: APIGatewayProxyHandlerV2 = async(
-    event
-): Promise<APIGatewayProxyResultV2> => {
-    return {
-        statusCode: 200,
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({message: 'OK'}),
-    };
-}
+export const handler: APIGatewayProxyHandlerV2 = () => {
+  const response: APIGatewayProxyResultV2 = {
+    statusCode: 200,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: 'OK' }),
+  };
+
+  return Promise.resolve(response);
+};

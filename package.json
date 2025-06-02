@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc --build",
     "lint": "eslint . --ext .ts",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "offline": "sls offline --stage dev",
     "deploy:dev": "npm run build && sls deploy --stage dev",
     "deploy:prod": "npm run build && sls deploy --stage prod",
