@@ -20,8 +20,8 @@ provider:
 
     DYNAMODB_TABLE: NalukataqUsers-${self:provider.stage}
 
-    MONGODB_URI: ${ssm:/nalukataq/${self:provider.stage}/MONGODB_URI}
-    MONGODB_DBNAME: nalukataq_${self:provider.stage}
+    # MONGODB_URI: ${ssm:/nalukataq/${self:provider.stage}/MONGODB_URI}
+    # MONGODB_DBNAME: nalukataq_${self:provider.stage}
 
     TWILIO_NUMBER: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_NUMBER}
     TWILIO_ACCOUNT_SID: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_SID}
@@ -53,7 +53,7 @@ provider:
 
 plugins:
   - serverless-offline 
-  - serverless-localstack
+  # - serverless-localstack
 
 custom:
   serverless-offline:
@@ -65,42 +65,40 @@ custom:
 # ───────── Lambda Functions ─────────
 functions:
   firewall:
-    handler: src/functions/firewall/handler.handler
+    handler: dist/functions/firewall/handler.handler
     memorySize: 256
     timeout: 3
     events:
       - httpApi: { path: /webhook, method: post }
 
   worker:
-    handler: src/functions/worker/handler.handler
+    handler: dist/functions/worker/handler.handler
     events:
       - sqs:
           arn: { "Fn::GetAtt": [ IncomingQueue, Arn ] }
           batchSize: 10
-          maximumRetryAttempts: 3
 
   scanner:
-    handler: src/functions/scanner/handler.handler
+    handler: dist/functions/scanner/handler.handler
     memorySize: 1024
     timeout: 30
     events:
       - s3:
-          bucket: !Ref RawBucket
+          bucket: nalukataq-raw-${self:provider.stage}
           event: s3:ObjectCreated:*
 
   dispatcher:
-    handler: src/functions/dispatcher/handler.handler
+    handler: dist/functions/dispatcher/handler.handler
     memorySize: 256
     timeout: 30
     events:
       - sqs:
           arn: { "Fn::GetAtt": [ OutgoingQueue, Arn ] }
           batchSize: 1
-          maximumConcurrency: 1 
-          maximumRetryAttempts: 3
+          maximumConcurrency: 2 
 
   cleaner:
-    handler: src/functions/cleaner/handler.handler
+    handler: dist/functions/cleaner/handler.handler
     events:
       - schedule:
           rate: cron(0 12 * * ? *)
@@ -164,10 +162,16 @@ resources:
           maxReceiveCount: 3
 
     # S3 buckets
-    RawBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: nalukataq-raw-${self:provider.stage}
+    
+    # RawBucket:
+    #   Type: AWS::S3::Bucket
+    #   Properties:
+    #     BucketName: nalukataq-raw-${self:provider.stage}
+    #     NotificationConfiguration:
+    #       LambdaConfigurations:
+    #         - Event: s3:ObjectCreated:*
+    #           Function: 
+    #             Fn::GetAtt: [ ScannerLambdaFunction, Arn ]
 
     CleanBucket:
       Type: AWS::S3::Bucket

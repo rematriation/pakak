@@ -19,6 +19,23 @@ services:
     volumes:
       - mongo_data:/data/db
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nalukataq-app
+    working_dir: /app
+    command: npm run offline
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.dev
+    volumes:
+      - ./:/app 
+    depends_on:
+      - localstack
+      - mongo
+
 volumes:
   mongo_data:
   localstack_data:
