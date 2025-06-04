@@ -57,15 +57,15 @@ provider:
 
 plugins:
   - serverless-offline
-  - serverless-localstack
+#   - serverless-localstack
 
-custom:
-  localstack:
-    host: http://localhost
-    edgePort: 4566
-    stages:
-      - dev
-    autostart: false
+# custom:
+#   localstack:
+#     host: http://localhost
+#     edgePort: 4566
+#     stages:
+#       - dev
+#     autostart: false
 
 # ───────── Lambda Functions ─────────
 functions:
