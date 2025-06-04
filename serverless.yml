@@ -1,13 +1,13 @@
 # "org" ensures this Service is used with the correct Serverless Framework Access Key.
-org: rematriation
+# org: rematriation
 # "app" enables Serverless Framework Dashboard features and sharing them with other Services.
-app: nalukataq
+# app: nalukataq
 service: nalukataq 
 
 variablesResolutionMode: 20210326
 useDotenv: true
 
-frameworkVersion: ~4.15.1
+frameworkVersion: '3'
 
 # ───────── Global defaults & per-stage naming ─────────
 provider:
@@ -54,15 +54,16 @@ provider:
             - arn:aws:s3:::nalukataq-quarantine-${self:provider.stage}/*
 
 plugins:
-  - serverless-offline 
-  # - serverless-localstack
+  - serverless-offline
+  - serverless-localstack
 
 custom:
-  serverless-offline:
-    httpPort: 3000
   localstack:
+    host: http://localhost
+    edgePort: 4566
     stages:
       - dev
+    autostart: false 
 
 # ───────── Lambda Functions ─────────
 functions:
@@ -102,8 +103,7 @@ functions:
   cleaner:
     handler: dist/functions/cleaner/handler.handler
     events:
-      - schedule:
-          rate: cron(0 12 * * ? *)
+      - schedule: cron(0 12 * * ? *)
 
 # ───────── CloudFormation Resources ─────────
 resources:

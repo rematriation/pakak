@@ -5,7 +5,7 @@ services:
     ports:
       - "4566:4566"          # unified edge port
     environment:
-      - LOCALSTACK_SERVICES=sts,s3,sqs,dynamodb,ssm,events
+      - LOCALSTACK_SERVICES=cloudformation,sts,s3,sqs,dynamodb,ssm,events,logs,iam,lambda
       - LOCALSTACK_PERSISTENCE=1
     volumes:
       - localstack_data:/var/lib/localstack
@@ -28,8 +28,8 @@ services:
     command: npm run offline
     ports:
       - "3000:3000"
-    env_file:
-      - .env.dev
+    # env_file:
+    #   - .env.dev
     volumes:
       - ./:/app 
     depends_on:
