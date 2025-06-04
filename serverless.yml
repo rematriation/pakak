@@ -2,7 +2,7 @@
 # org: rematriation
 # "app" enables Serverless Framework Dashboard features and sharing them with other Services.
 # app: nalukataq
-service: nalukataq 
+service: nalukataq
 
 variablesResolutionMode: 20210326
 useDotenv: true
@@ -12,13 +12,15 @@ frameworkVersion: '3'
 # ───────── Global defaults & per-stage naming ─────────
 provider:
   name: aws
-  runtime: nodejs20.x
+  runtime: nodejs18.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   stackName: nalukataq-${self:provider.stage}
 
   environment:
     APP_STAGE: ${self:provider.stage}
+    NODE_ENV: production
+    LOG_LEVEL: info
 
     DYNAMODB_TABLE: NalukataqUsers-${self:provider.stage}
 
@@ -55,15 +57,15 @@ provider:
 
 plugins:
   - serverless-offline
-  # - serverless-localstack
+  - serverless-localstack
 
-# custom:
-#   localstack:
-#     host: http://localhost
-#     edgePort: 4566
-#     stages:
-#       - dev
-#     autostart: false 
+custom:
+  localstack:
+    host: http://localhost
+    edgePort: 4566
+    stages:
+      - dev
+    autostart: false
 
 # ───────── Lambda Functions ─────────
 functions:
@@ -72,13 +74,18 @@ functions:
     memorySize: 256
     timeout: 3
     events:
-      - httpApi: { path: "/${self:provider.stage}/webhook", method: post }
+      - http:
+          path: '/${self:provider.stage}/webhook'
+          method: get
+      - http:
+          path: '/${self:provider.stage}/webhook'
+          method: post
 
   worker:
     handler: dist/functions/worker/handler.handler
     events:
       - sqs:
-          arn: { "Fn::GetAtt": [ IncomingQueue, Arn ] }
+          arn: { 'Fn::GetAtt': [IncomingQueue, Arn] }
           batchSize: 10
 
   scanner:
@@ -96,9 +103,9 @@ functions:
     timeout: 30
     events:
       - sqs:
-          arn: { "Fn::GetAtt": [ OutgoingQueue, Arn ] }
+          arn: { 'Fn::GetAtt': [OutgoingQueue, Arn] }
           batchSize: 1
-          maximumConcurrency: 2 
+          maximumConcurrency: 2
 
   cleaner:
     handler: dist/functions/cleaner/handler.handler
@@ -108,7 +115,6 @@ functions:
 # ───────── CloudFormation Resources ─────────
 resources:
   Resources:
-
     # DynamoDB
     UsersTable:
       Type: AWS::DynamoDB::Table
@@ -164,7 +170,7 @@ resources:
           maxReceiveCount: 3
 
     # S3 buckets
-    
+
     # RawBucket:
     #   Type: AWS::S3::Bucket
     #   Properties:
@@ -172,7 +178,7 @@ resources:
     #     NotificationConfiguration:
     #       LambdaConfigurations:
     #         - Event: s3:ObjectCreated:*
-    #           Function: 
+    #           Function:
     #             Fn::GetAtt: [ ScannerLambdaFunction, Arn ]
 
     CleanBucket:
