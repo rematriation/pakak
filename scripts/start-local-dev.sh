@@ -1,26 +1,22 @@
 #!/usr/bin/env bash
 set -e
 
-# 1) Build and start Docker Compose (LocalStack, Mongo, and App)
 docker-compose up -d --build
 
-# 2) Wait for LocalStack to be healthy
 echo "Waiting for LocalStack to start..."
 until docker exec localstack awslocal sts get-caller-identity &> /dev/null; do
   printf "."
   sleep 2
 done
-echo "✅ LocalStack is ready."
+echo "LocalStack is ready."
 
-# 3) Wait for nalukataq-app container to start
 echo "Waiting for nalukataq-app container to start..."
 while [ "$(docker inspect -f '{{.State.Running}}' nalukataq-app)" != "true" ]; do
   printf "."
-  sleep 1
+  sleep 2
 done
-echo "✅ nalukataq-app is running."
+echo "nalukataq-app is running."
 
-# 4) Seed dummy parameters into LocalStack's SSM
 echo "Seeding dummy parameters into SSM..."
 docker exec localstack awslocal ssm put-parameter \
   --name "/nalukataq/dev/TWILIO_NUMBER" \
@@ -39,16 +35,14 @@ docker exec localstack awslocal ssm put-parameter \
   --value "dummy_auth_token" \
   --type "String" \
   --overwrite
-echo "✅ Dummy parameters created/updated."
+echo "Dummy parameters created/updated."
 
-# 5) (Optional) Verify that the parameters exist in LocalStack
 echo "Verifying dummy SSM parameters..."
 docker exec localstack awslocal ssm get-parameter --name "/nalukataq/dev/TWILIO_NUMBER"
 docker exec localstack awslocal ssm get-parameter --name "/nalukataq/dev/TWILIO_SID"
 docker exec localstack awslocal ssm get-parameter --name "/nalukataq/dev/TWILIO_TOKEN"
-echo "✅ Verification complete."
+echo "Verification complete."
 
-# 6) Deploy the Serverless service into LocalStack, forcing AWS SDK calls to LocalStack
 echo "Deploying to LocalStack (using serverless)…"
 docker exec \
   -e AWS_REGION="us-east-1" \
@@ -58,7 +52,7 @@ docker exec \
   -e AWS_ENDPOINT_URL="http://localstack:4566" \
   nalukataq-app \
   sh -c "serverless deploy --stage dev"
-echo "✅ Deployment to LocalStack complete."
+echo "Deployment to LocalStack complete."
 
 echo ""
-echo "You can now hit your local endpoint at: http://localhost:3000/dev/webhook"
+echo "Hit local endpoint: http://localhost:3000/dev/webhook"

@@ -20,4 +20,4 @@ ENV AWS_REGION="us-east-1" \
 
 COPY --from=build /app /app
 EXPOSE 3000
-CMD ["npx", "serverless", "offline"]
+CMD ["tail", "-f", "/dev/null"]
