@@ -15,12 +15,12 @@ provider:
 
   environment:
     APP_STAGE: ${self:provider.stage}
-    NODE_ENV: production
-    LOG_LEVEL: info
+    NODE_ENV: dev
+    LOG_LEVEL: debug
 
     DYNAMODB_TABLE: NalukataqUsers-${self:provider.stage}
 
-    # MONGODB_URI: ${ssm:/nalukataq/${self:provider.stage}/MONGODB_URI}
+    # MONGODB_URI: ${ssm:/nalukatastilq/${self:provider.stage}/MONGODB_URI}
     # MONGODB_DBNAME: nalukataq_${self:provider.stage}
 
     TWILIO_NUMBER: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_NUMBER}
