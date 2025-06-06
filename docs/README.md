@@ -4,6 +4,24 @@
 
 Our *Nalukataq* application uses [Twilio](https://twilio.com) to create reliable sending and receiving of SMS/MMS messages.
 
+### Nalukataq's Twilio Config &amp; Important Details
+
+- **Brand**: Charity NPO via Aqqaluk Trust
+- **A2P Messaging Plan**: Standard.
+  - T-Mobile daily limits: 200,000
+  - Trust Score: 75/100
+  - Customer type: Nonprofit
+- **Charity Campaign Message throughputs**:
+  - AT&T: 40 MPS (message per second)
+  - T-Mobile: 2k-200k daily caps, but depends on our brand Trust Score
+- **Charity Pricing Fees**:
+  - Campaign Registration Fees: $3/month
+  - AT&T SMS Carrier Fees (Outbound): $0.00
+  - AT&T MMS Carrier Fees (Outbound): $0.00
+  - T-Mobile SMS Carrier Fees (In/Outbound): $0.00
+  - T-Mobile MMS Carrier Fees (In/Outbound): $0.00
+- **Messaging service**: nalukataq
+
 ### Why use Twilio?
 
 - Useful APIs (Application Programming Interfaces) that makes developing and maintaining the application much easier.
