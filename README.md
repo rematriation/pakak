@@ -1,2 +1,3 @@
-# nalukataq
-App to conduct sustainable and engaging community-led digital archiving via mobile texting
+# Nalukataq
+
+App to conduct sustainable and engaging community-led digital archiving via mobile texting campaign services.
