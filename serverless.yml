@@ -36,6 +36,7 @@ provider:
             - dynamodb:PutItem
             - dynamodb:UpdateItem
             - dynamodb:Scan
+            - dynamodb:DescribeTable
           Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}
 
         - Effect: Allow
@@ -78,7 +79,7 @@ custom:
 functions:
   firewall:
     handler: dist/functions/firewall/handler.handler
-    memorySize: 256
+    memorySize: 512
     timeout: 3
     events:
       - http:
@@ -144,6 +145,9 @@ resources:
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
+        TimeToLiveSpecification:
+          AttributeName: isProcessingMessage
+          Enabled: true
 
     # DLQs
     IncomingDLQ:

@@ -5,7 +5,7 @@ import dynamoose from '../libs/dynamoose';
  * IUser describes the attribute shape in DynamoDB.
  * - phone:                     Partition key in E.164 format (e.g. "+15551234567")
  * - subscriptionStatus:        true = opt-in, false = STOP
- * - awaitingResponse:          true if waiting on a reply
+ * - isProcessingMessage:       true if message is being processed.
  * - rateLimitCounter:          messages sent in current window
  * - rateLimitWindowExpiresAt?: ISO timestamp when the window ends
  * - awaitingDeletion:          0 or 1 (flag for background purge)
@@ -15,8 +15,8 @@ import dynamoose from '../libs/dynamoose';
 export interface IUser {
   phone: string;
   subscriptionStatus: boolean;
-  awaitingResponse: boolean;
-  rateLimitCounter: number;
+  isProcessingMessage?: number | null;
+  rateLimitCounter?: number | null;
   rateLimitWindowExpiresAt?: string;
   awaitingDeletion: number;
   createdAt?: string;
@@ -42,16 +42,15 @@ const userSchema = new dynamoose.Schema(
     subscriptionStatus: {
       type: Boolean,
       required: true,
-      default: true,
-    },
-    awaitingResponse: {
-      type: Boolean,
-      required: true,
       default: false,
+    },
+    isProcessingMessage: {
+      type: Number,
+      required: false,
     },
     rateLimitCounter: {
       type: Number,
-      required: true,
+      required: false,
       default: 0,
       validate: (v: ValueType) => {
         if (typeof v !== 'number') return false;
@@ -59,7 +58,7 @@ const userSchema = new dynamoose.Schema(
       },
     },
     rateLimitWindowExpiresAt: {
-      type: String, // ISO string when the throttle window ends
+      type: String,
       required: false,
     },
     awaitingDeletion: {
@@ -70,14 +69,6 @@ const userSchema = new dynamoose.Schema(
         if (typeof v !== 'number') return false;
         return v === 0 || v === 1;
       },
-    },
-    createdAt: {
-      type: String,
-      required: false,
-    },
-    updatedAt: {
-      type: String,
-      required: false,
     },
   },
   {
