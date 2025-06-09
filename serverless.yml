@@ -27,6 +27,9 @@ provider:
     TWILIO_ACCOUNT_SID: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_SID}
     TWILIO_AUTH_TOKEN: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_TOKEN}
 
+    INCOMING_SQS_QUEUE_URL: !GetAtt IncomingQueue.QueueUrl
+    OUTGOING_SQS_QUEUE_URL: !GetAtt OutgoingQueue.QueueUrl
+
   iam:
     role:
       statements:
@@ -168,6 +171,7 @@ resources:
       Properties:
         FifoQueue: true
         QueueName: nalukataq-incoming-${self:provider.stage}.fifo
+        ContentBasedDeduplication: true
         RedrivePolicy:
           deadLetterTargetArn: !GetAtt IncomingDLQ.Arn
           maxReceiveCount: 3
@@ -177,6 +181,7 @@ resources:
       Properties:
         FifoQueue: true
         QueueName: nalukataq-outgoing-${self:provider.stage}.fifo
+        ContentBasedDeduplication: true
         RedrivePolicy:
           deadLetterTargetArn: !GetAtt OutgoingDLQ.Arn
           maxReceiveCount: 3

@@ -19,7 +19,9 @@ export const TWI_ML_RESPONSE = {
   WELCOME_MESSAGE: asTwimlXmlString(
     '<Response><Message>Hi from us at Aqqaluk Trust! Welcome to our special Sivu Summer archiving activity.\nReply "START" to subscribe, continue receiving msgs from us, and complete the Sivu Summer activity.\nMsg & data rates may apply. Reply STOP to unsubscribe at anytime.</Message></Response>',
   ),
-  THANK_YOU: asTwimlXmlString('<Response><Message>Thank you!</Message></Response>'),
+  THANK_YOU: asTwimlXmlString(
+    '<Response><Message>Thank you for your submission!</Message></Response>',
+  ),
   SUBSCRIPTION_CONFIRMATION: asTwimlXmlString(
     "<Response><Message>Aqqaluk Trust: Taikuu! You've opted into receiving and submitting msgs. Msg & data rates may apply. Reply STOP to unsubscribe.</Message></Response>",
   ),

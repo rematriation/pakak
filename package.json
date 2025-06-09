@@ -15,7 +15,7 @@
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.823.0",
     "@aws-sdk/client-s3": "^3.820.0",
-    "@aws-sdk/client-sqs": "^3.817.0",
+    "@aws-sdk/client-sqs": "^3.826.0",
     "@aws-sdk/util-dynamodb": "^3.817.0",
     "curl": "^0.1.4",
     "dynamoose": "^4.0.4",

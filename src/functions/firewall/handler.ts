@@ -13,9 +13,14 @@ import {
   validatePhoneNumber,
 } from '../../libs/requestValidator';
 import { twilioResponse } from '../../libs/responseHelpers';
+import { SQSService, ISQSServiceToken } from '../../libs/SQSService';
+import { AppConfig, IAppConfigToken } from '../../configs/AppConfig';
 
+container.register(IAppConfigToken, { useClass: AppConfig });
 const userRepository: UserRepository = container.resolve(UserRepository);
+container.register(ISQSServiceToken, { useClass: SQSService });
 const firewallService = container.resolve(FirewallService);
+
 const TTL_FOR_PROCESSING_LOCK = 60;
 
 export const handler: APIGatewayProxyHandler = async (
@@ -59,7 +64,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
 
     lockAcquired = await userRepository.acquireProcessingLock(phoneNumber, TTL_FOR_PROCESSING_LOCK);
     if (!lockAcquired) {
-      console.log(`Handler :: Concurrent request for ${phoneNumber}. Lock already held.`);
+      console.info(`Handler :: Concurrent request for ${phoneNumber}. Lock already held.`);
       return Promise.resolve({
         statusCode: 200,
         headers: { 'Content-Type': 'text/xml' },
