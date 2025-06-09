@@ -1,20 +1,21 @@
 import 'reflect-metadata';
 import { container } from 'tsyringe';
-// import { FirewallService } from '../../services/FirewallService';
+import { FirewallService } from '../../services/FirewallService';
 import { UserRepository } from '../../repositories/UserRepository';
 import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } from 'aws-lambda';
 import { AppError } from '../../libs/errors/AppError';
 import { ErrorCode } from '../../libs/errors/ErrorCode';
 import { IUser } from '../../models/User';
-import { TWI_ML_RESPONSES } from '../../constants/twimlResponses';
+import { TWI_ML_RESPONSE } from '../../constants/TwiMLResponse';
 import {
   validateHttpMethod,
   parseAndValidatePostBody,
   validatePhoneNumber,
-} from '../..//libs/requestValidator';
+} from '../../libs/requestValidator';
+import { twilioResponse } from '../../libs/responseHelpers';
 
 const userRepository: UserRepository = container.resolve(UserRepository);
-// const firewallService = container.resolve(FirewallService);
+const firewallService = container.resolve(FirewallService);
 const TTL_FOR_PROCESSING_LOCK = 60;
 
 export const handler: APIGatewayProxyHandler = async (
@@ -43,53 +44,33 @@ async function handleGet(): Promise<APIGatewayProxyResult> {
 
 async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
   let phoneNumber: string | null = null;
+  let lockAcquired: boolean = false;
+  let errorRaised: boolean = false;
+  let delegatedToService: boolean = false;
   try {
     const twilioParsedParams = parseAndValidatePostBody(event);
     phoneNumber = validatePhoneNumber(twilioParsedParams);
 
-    let user: IUser | null = await userRepository.getUser(phoneNumber);
+    const user: IUser | null = await userRepository.getUser(phoneNumber);
 
     if (!user) {
-      console.log(`Handler :: User ${phoneNumber} does not exist. Attempting to create.`);
-      user = await userRepository.createUser({
-        phone: phoneNumber,
-        subscriptionStatus: false,
-        awaitingDeletion: 0,
-        rateLimitCounter: 0,
-      });
-
-      if (!user) {
-        console.warn(
-          `Handler :: Concurrent creation for ${phoneNumber}. Another process is handling.`,
-        );
-        return Promise.resolve({
-          statusCode: 200,
-          headers: { 'Content-Type': 'text/xml' },
-          body: '<Response></Response>',
-        });
-      }
+      return createNewUser(phoneNumber);
     }
 
-    const lockAcquired = await userRepository.acquireProcessingLock(
-      phoneNumber,
-      TTL_FOR_PROCESSING_LOCK,
-    );
-
+    lockAcquired = await userRepository.acquireProcessingLock(phoneNumber, TTL_FOR_PROCESSING_LOCK);
     if (!lockAcquired) {
       console.log(`Handler :: Concurrent request for ${phoneNumber}. Lock already held.`);
       return Promise.resolve({
         statusCode: 200,
         headers: { 'Content-Type': 'text/xml' },
-        body: TWI_ML_RESPONSES.PROCESSING_REQUEST,
+        body: TWI_ML_RESPONSE.PROCESSING_REQUEST,
       });
     }
 
-    return Promise.resolve({
-      statusCode: 200,
-      headers: { 'Content-Type': 'text/xml' },
-      body: TWI_ML_RESPONSES.THANK_YOU,
-    });
+    delegatedToService = true;
+    return firewallService.processMessage(phoneNumber, user, twilioParsedParams);
   } catch (err: unknown) {
+    errorRaised = true;
     if (err instanceof AppError) {
       console.warn({ code: err.code, message: err.message }, 'Handler :: Application-level error.');
       return Promise.resolve({
@@ -108,7 +89,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
         statusCode: 500,
         body: JSON.stringify({
           code: ErrorCode.INTERNAL_SERVER_ERROR,
-          message: err.message || TWI_ML_RESPONSES.GENERIC_ERROR,
+          message: err.message || TWI_ML_RESPONSE.GENERIC_ERROR,
         }),
       });
     } else {
@@ -117,13 +98,25 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
         statusCode: 500,
         body: JSON.stringify({
           code: ErrorCode.INTERNAL_SERVER_ERROR,
-          message: TWI_ML_RESPONSES.GENERIC_ERROR,
+          message: TWI_ML_RESPONSE.GENERIC_ERROR,
         }),
       });
     }
   } finally {
-    if (phoneNumber) {
-      await userRepository.releaseProcessingLock(phoneNumber);
+    if (phoneNumber && lockAcquired && (errorRaised || !delegatedToService)) {
+      void userRepository.releaseProcessingLock(phoneNumber);
     }
   }
+}
+
+async function createNewUser(phoneNumber: string): Promise<APIGatewayProxyResult> {
+  console.info(`Handler :: User ${phoneNumber} does not exist. Attempting to create.`);
+  void userRepository.createUser({
+    phone: phoneNumber,
+    subscriptionStatus: false,
+    awaitingDeletion: 0,
+    rateLimitCounter: 0,
+  });
+
+  return Promise.resolve(twilioResponse(TWI_ML_RESPONSE.WELCOME_MESSAGE));
 }

@@ -11,16 +11,14 @@ export class UserRepository {
     return raw as unknown as IUser | null;
   }
 
-  async createUser(data: Omit<IUser, 'createdAt' | 'updatedAt'>): Promise<IUser | null> {
+  async createUser(data: Omit<IUser, 'createdAt' | 'updatedAt'>): Promise<void> {
     try {
       const created = await UserModel.create(data);
       console.info('UserRepository.createUser :: User created successfully. User: ', created);
-      return created as unknown as IUser;
     } catch (err: unknown) {
       if (checkErrorisConditionalCheckFailedException(err)) {
-        console.warn('UserRepository.createUser :: User already exists.');
         // User creation duplicated
-        return null;
+        console.warn('UserRepository.createUser :: User already exists.');
       }
 
       console.error('UserRepository.createUser :: user creation failed.');
