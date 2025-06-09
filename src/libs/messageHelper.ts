@@ -1,0 +1,29 @@
+/**
+ * @author Daksh Pratap Singh
+ * @email daksh204singh@gmail.com
+ * @create date 2025-06-08 21:15:33
+ * @modify date 2025-06-08 21:15:33
+ * @desc Contains helper functions for messages.
+ */
+
+import { Command } from '../constants/Command';
+
+export function sanitizeTxtMessage(rawMsg: string | undefined | null): string {
+  /* eslint-disable-next-line no-control-regex */
+  return (rawMsg || '').replace(/[\x00-\x1F\x7F]/g, '').replace(/<[^>]*>?/gm, '');
+}
+
+export function extractCommandKeyword(msg: string): Command | null {
+  if (!msg) {
+    return null;
+  }
+
+  const normalizedMsg = msg.toUpperCase().trim();
+  for (const command of Object.values(Command)) {
+    if (normalizedMsg === command.toString()) {
+      return command;
+    }
+  }
+
+  return null;
+}

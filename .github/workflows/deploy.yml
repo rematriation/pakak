@@ -47,7 +47,7 @@ jobs:
           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
       - name: Install Serverless Framework
-        run: npm install --location=global serverless@^4.15.1
+        run: npm install --location=global serverless@^3.40.0
 
       - name: Deploy to AWS
         env:

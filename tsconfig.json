@@ -1,15 +1,17 @@
 {
   "compilerOptions": {
-    "target": "ES2020",                          // modern runtime
-    "module": "CommonJS",                        // for Node.js / Serverless
-    "lib": ["ES2020"],                           // available globals
-    "outDir": "dist",                            // compiled output
-    "rootDir": "src",                            // source files
-    "strict": true,                              // all strict mode checks
-    "esModuleInterop": true,                     // allow default imports from CJS
-    "forceConsistentCasingInFileNames": true,    // file name case safety
-    "skipLibCheck": true,                        // skip declaration checks
-    "resolveJsonModule": true,                   // import .json
+    "target": "ES2020", // modern runtime
+    "module": "CommonJS", // for Node.js / Serverless
+    "lib": ["ES2020"], // available globals
+    "outDir": "dist", // compiled output
+    "rootDir": "src", // source files
+    "strict": true, // all strict mode checks
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "esModuleInterop": true, // allow default imports from CJS
+    "forceConsistentCasingInFileNames": true, // file name case safety
+    "skipLibCheck": true, // skip declaration checks
+    "resolveJsonModule": true, // import .json
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true

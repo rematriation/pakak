@@ -5,8 +5,8 @@ services:
     ports:
       - "4566:4566"          # unified edge port
     environment:
-      - LOCALSTACK_SERVICES=sts,s3,sqs,dynamodb,ssm,events
-      - LOCALSTACK_PERSISTENCE=1
+      - LOCALSTACK_SERVICES=cloudformation,sts,s3,sqs,dynamodb,ssm,events,logs,iam,lambda,apigateway
+      - LOCALSTACK_PERSISTENCE=0
     volumes:
       - localstack_data:/var/lib/localstack
       - "/var/run/docker.sock:/var/run/docker.sock"
@@ -25,11 +25,12 @@ services:
       dockerfile: Dockerfile
     container_name: nalukataq-app
     working_dir: /app
-    command: npm run offline
-    ports:
-      - "3000:3000"
-    env_file:
-      - .env.dev
+    # command: npm run offline
+    command: ["tail", "-f", "/dev/null"]
+    # ports:
+    #   - "3000:3000"
+    # env_file:
+    #   - .env.dev
     volumes:
       - ./:/app 
     depends_on:
