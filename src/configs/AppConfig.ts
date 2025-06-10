@@ -22,6 +22,9 @@ export interface IAppConfig {
   incomingSqsQueueUrl: string;
   outgoingSqsQueueUrl: string;
   awsRegion: string;
+  staticAssetsBucketName: string;
+  staticAssetsBucketURL: string;
+  inupiatValuesImgName: string;
 }
 
 /**
@@ -31,7 +34,7 @@ export const IAppConfigToken = Symbol('IAppConfig');
 
 /**
  * Concrete implementation of IAppConfig that loads values from process.env.
- * Performs basic validation and throws errors if required variables are missing.
+ * Throws errors if required variables are missing.
  */
 @injectable()
 export class AppConfig implements IAppConfig {
@@ -43,6 +46,9 @@ export class AppConfig implements IAppConfig {
   public readonly incomingSqsQueueUrl: string;
   public readonly outgoingSqsQueueUrl: string;
   public readonly awsRegion: string;
+  public readonly staticAssetsBucketName: string;
+  public readonly staticAssetsBucketURL: string;
+  public readonly inupiatValuesImgName: string;
 
   constructor() {
     this.appStage = this.getRequiredEnv('APP_STAGE');
@@ -53,6 +59,9 @@ export class AppConfig implements IAppConfig {
     this.incomingSqsQueueUrl = this.getRequiredEnv('INCOMING_SQS_QUEUE_URL');
     this.outgoingSqsQueueUrl = this.getRequiredEnv('OUTGOING_SQS_QUEUE_URL');
     this.awsRegion = process.env.AWS_REGION || 'us-east-1';
+    this.staticAssetsBucketName = this.getRequiredEnv('STATIC_ASSETS_BUCKET_NAME');
+    this.staticAssetsBucketURL = this.getRequiredEnv('STATIC_ASSETS_BASE_URL');
+    this.inupiatValuesImgName = this.getRequiredEnv('INUPIAT_VALUES_IMAGE_NAME');
   }
 
   /**

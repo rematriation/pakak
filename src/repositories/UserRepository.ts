@@ -27,11 +27,14 @@ export class UserRepository {
   }
 
   async setSubscription(phone: string, optIn: boolean): Promise<void> {
-    await UserModel.update({ phone }, { subscriptionStatus: optIn });
+    await UserModel.update({ phone }, { subscriptionStatus: optIn, isProcessingMessage: 0 });
   }
 
   async setAwaitingDeletion(phone: string, flag: 0 | 1): Promise<void> {
-    await UserModel.update({ phone }, { awaitingDeletion: flag });
+    await UserModel.update(
+      { phone },
+      { awaitingDeletion: flag, subscriptionStatus: false, isProcessingMessage: 0 },
+    );
   }
 
   /**

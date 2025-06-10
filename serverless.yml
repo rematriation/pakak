@@ -30,6 +30,10 @@ provider:
     INCOMING_SQS_QUEUE_URL: !GetAtt IncomingQueue.QueueUrl
     OUTGOING_SQS_QUEUE_URL: !GetAtt OutgoingQueue.QueueUrl
 
+    STATIC_ASSETS_BUCKET_NAME: !Ref StaticAssetsBucket
+    STATIC_ASSETS_BASE_URL: !Sub 'https://${StaticAssetsBucket}.s3.${self:provider.region}.amazonaws.com'
+    INUPIAT_VALUES_IMAGE_NAME: 'Inupiat_Ilitqusiat_Values.jpg'
+
   iam:
     role:
       statements:
@@ -150,7 +154,7 @@ resources:
               ProjectionType: ALL
         TimeToLiveSpecification:
           AttributeName: isProcessingMessage
-          Enabled: true
+          Enabled: false
 
     # DLQs
     IncomingDLQ:
@@ -188,6 +192,29 @@ resources:
 
     # S3 buckets
 
+    StaticAssetsBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: nalukataq-static-assets-${self:provider.stage}
+        PublicAccessBlockConfiguration:
+          BlockPublicPolicy: false
+          RestrictPublicBuckets: false
+        VersioningConfiguration:
+          Status: Enabled
+      DeletionPolicy: Retain
+
+    StaticAssetsBucketPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket: !Ref StaticAssetsBucket
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Principal: '*'
+              Action: 's3:GetObject'
+              Resource: !Join ['', [!GetAtt StaticAssetsBucket.Arn, '/*']]
+
     # RawBucket:
     #   Type: AWS::S3::Bucket
     #   Properties:
@@ -202,8 +229,12 @@ resources:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: nalukataq-clean-${self:provider.stage}
+        VersioningConfiguration:
+          Status: Enabled
 
     QuarantineBucket:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: nalukataq-quarantine-${self:provider.stage}
+        VersioningConfiguration:
+          Status: Enabled
