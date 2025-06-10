@@ -9,4 +9,5 @@ export enum Command {
   DELETE = 'DELETE',
   HELP = 'HELP',
   STATUS = 'STATUS',
+  INU = 'INU',
 }
