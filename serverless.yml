@@ -20,8 +20,8 @@ provider:
 
     DYNAMODB_TABLE: NalukataqUsers-${self:provider.stage}
 
-    # MONGODB_URI: ${ssm:/nalukatastilq/${self:provider.stage}/MONGODB_URI}
-    # MONGODB_DBNAME: nalukataq_${self:provider.stage}
+    MONGODB_URI: ${ssm:/nalukataq/${self:provider.stage}/MONGODB_URI}
+    MONGODB_DBNAME: nalukataq_${self:provider.stage}
 
     TWILIO_NUMBER: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_NUMBER}
     TWILIO_ACCOUNT_SID: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_SID}

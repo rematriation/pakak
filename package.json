@@ -20,6 +20,7 @@
     "curl": "^0.1.4",
     "dynamoose": "^4.0.4",
     "mongodb": "^6.16.0",
+    "mongoose": "^8.15.1",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "reflect-metadata": "^0.2.2",

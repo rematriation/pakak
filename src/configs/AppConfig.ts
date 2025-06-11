@@ -25,6 +25,8 @@ export interface IAppConfig {
   staticAssetsBucketName: string;
   staticAssetsBucketURL: string;
   inupiatValuesImgName: string;
+  mongodbURI: string;
+  mongodbDBName: string;
 }
 
 /**
@@ -49,6 +51,8 @@ export class AppConfig implements IAppConfig {
   public readonly staticAssetsBucketName: string;
   public readonly staticAssetsBucketURL: string;
   public readonly inupiatValuesImgName: string;
+  public readonly mongodbURI: string;
+  public readonly mongodbDBName: string;
 
   constructor() {
     this.appStage = this.getRequiredEnv('APP_STAGE');
@@ -62,6 +66,8 @@ export class AppConfig implements IAppConfig {
     this.staticAssetsBucketName = this.getRequiredEnv('STATIC_ASSETS_BUCKET_NAME');
     this.staticAssetsBucketURL = this.getRequiredEnv('STATIC_ASSETS_BASE_URL');
     this.inupiatValuesImgName = this.getRequiredEnv('INUPIAT_VALUES_IMAGE_NAME');
+    this.mongodbURI = this.getRequiredEnv('MONGODB_URI');
+    this.mongodbDBName = this.getRequiredEnv('MONGODB_DBNAME');
   }
 
   /**
