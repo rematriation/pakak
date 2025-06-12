@@ -1,4 +1,4 @@
-service: nalukataq
+service: pakak
 
 variablesResolutionMode: 20210326
 useDotenv: true
@@ -11,21 +11,21 @@ provider:
   runtime: nodejs18.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
-  stackName: nalukataq-${self:provider.stage}
+  stackName: pakak-${self:provider.stage}
 
   environment:
     APP_STAGE: ${self:provider.stage}
     NODE_ENV: dev
     LOG_LEVEL: debug
 
-    DYNAMODB_TABLE: NalukataqUsers-${self:provider.stage}
+    DYNAMODB_TABLE: PakakUsers-${self:provider.stage}
 
     # MONGODB_URI: ${ssm:/nalukatastilq/${self:provider.stage}/MONGODB_URI}
     # MONGODB_DBNAME: nalukataq_${self:provider.stage}
 
-    TWILIO_NUMBER: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_NUMBER}
-    TWILIO_ACCOUNT_SID: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_SID}
-    TWILIO_AUTH_TOKEN: ${ssm:/nalukataq/${self:provider.stage}/TWILIO_TOKEN}
+    TWILIO_NUMBER: ${ssm:/pakak/${self:provider.stage}/TWILIO_NUMBER}
+    TWILIO_ACCOUNT_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_SID}
+    TWILIO_AUTH_TOKEN: ${ssm:/pakak/${self:provider.stage}/TWILIO_TOKEN}
 
     INCOMING_SQS_QUEUE_URL: !GetAtt IncomingQueue.QueueUrl
     OUTGOING_SQS_QUEUE_URL: !GetAtt OutgoingQueue.QueueUrl
@@ -49,22 +49,22 @@ provider:
         - Effect: Allow
           Action: sqs:*
           Resource:
-            - arn:aws:sqs:${self:provider.region}:*:nalukataq-incoming-${self:provider.stage}.fifo
-            - arn:aws:sqs:${self:provider.region}:*:nalukataq-outgoing-${self:provider.stage}.fifo
+            - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-incoming.fifo
+            - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-outgoing.fifo
 
         - Effect: Allow
           Action: s3:*
           Resource:
-            - arn:aws:s3:::nalukataq-raw-${self:provider.stage}/*
-            - arn:aws:s3:::nalukataq-clean-${self:provider.stage}/*
-            - arn:aws:s3:::nalukataq-quarantine-${self:provider.stage}/*
+            - arn:aws:s3:::pakak-${self:provider.stage}-raw/*
+            - arn:aws:s3:::pakak-${self:provider.stage}-clean/*
+            - arn:aws:s3:::pakak-${self:provider.stage}-quarantine/*
 
         # - Effect: Allow
         #   Action:
         #     - logs:CreateLogGroup
         #     - logs:CreateLogStream
         #     - logs:PutLogEvents
-        #   Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/nalukataq-${self:provider.stage}-*:*
+        #   Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/pakak-${self:provider.stage}-*:*
 
 plugins:
   - serverless-localstack
@@ -109,7 +109,7 @@ functions:
     timeout: 30
     events:
       - s3:
-          bucket: nalukataq-raw-${self:provider.stage}
+          bucket: pakak-${self:provider.stage}-raw
           event: s3:ObjectCreated:*
 
   dispatcher:
@@ -161,20 +161,20 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         FifoQueue: true
-        QueueName: nalukataq-incoming-dlq-${self:provider.stage}.fifo
+        QueueName: pakak-${self:provider.stage}-incoming-dlq.fifo
 
     OutgoingDLQ:
       Type: AWS::SQS::Queue
       Properties:
         FifoQueue: true
-        QueueName: nalukataq-outgoing-dlq-${self:provider.stage}.fifo
+        QueueName: pakak-${self:provider.stage}-outgoing-dlq.fifo
 
     # Main FIFO queues
     IncomingQueue:
       Type: AWS::SQS::Queue
       Properties:
         FifoQueue: true
-        QueueName: nalukataq-incoming-${self:provider.stage}.fifo
+        QueueName: pakak-${self:provider.stage}-incoming.fifo
         ContentBasedDeduplication: true
         RedrivePolicy:
           deadLetterTargetArn: !GetAtt IncomingDLQ.Arn
@@ -184,7 +184,7 @@ resources:
       Type: AWS::SQS::Queue
       Properties:
         FifoQueue: true
-        QueueName: nalukataq-outgoing-${self:provider.stage}.fifo
+        QueueName: pakak-${self:provider.stage}-outgoing.fifo
         ContentBasedDeduplication: true
         RedrivePolicy:
           deadLetterTargetArn: !GetAtt OutgoingDLQ.Arn
@@ -195,7 +195,7 @@ resources:
     StaticAssetsBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: nalukataq-static-assets-${self:provider.stage}
+        BucketName: pakak$-{self:provider.stage}-static-assets
         PublicAccessBlockConfiguration:
           BlockPublicPolicy: false
           RestrictPublicBuckets: false
@@ -218,7 +218,7 @@ resources:
     # RawBucket:
     #   Type: AWS::S3::Bucket
     #   Properties:
-    #     BucketName: nalukataq-raw-${self:provider.stage}
+    #     BucketName: pakak-raw-${self:provider.stage}
     #     NotificationConfiguration:
     #       LambdaConfigurations:
     #         - Event: s3:ObjectCreated:*
@@ -228,13 +228,13 @@ resources:
     CleanBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: nalukataq-clean-${self:provider.stage}
+        BucketName: pakak-${self:provider.stage}-clean
         VersioningConfiguration:
           Status: Enabled
 
     QuarantineBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: nalukataq-quarantine-${self:provider.stage}
+        BucketName: pakak-${self:provider.stage}-quarantine
         VersioningConfiguration:
           Status: Enabled

@@ -5,6 +5,7 @@
  */
 export enum Command {
   START = 'START',
+  UNSTOP = Command.START,
   STOP = 'STOP',
   DELETE = 'DELETE',
   HELP = 'HELP',

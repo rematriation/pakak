@@ -10,37 +10,37 @@ until docker exec localstack awslocal sts get-caller-identity &> /dev/null; do
 done
 echo "LocalStack is ready."
 
-echo "Waiting for nalukataq-app container to start..."
-while [ "$(docker inspect -f '{{.State.Running}}' nalukataq-app)" != "true" ]; do
+echo "Waiting for pakak-app container to start..."
+while [ "$(docker inspect -f '{{.State.Running}}' pakak-app)" != "true" ]; do
   printf "."
   sleep 2
 done
-echo "nalukataq-app is running."
+echo "pakak-app is running."
 
 echo "Seeding dummy parameters into SSM..."
 docker exec localstack awslocal ssm put-parameter \
-  --name "/nalukataq/dev/TWILIO_NUMBER" \
+  --name "/pakak/dev/TWILIO_NUMBER" \
   --value "+15550001111" \
   --type "String" \
   --overwrite
 
 docker exec localstack awslocal ssm put-parameter \
-  --name "/nalukataq/dev/TWILIO_SID" \
+  --name "/pakak/dev/TWILIO_SID" \
   --value "ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" \
   --type "String" \
   --overwrite
 
 docker exec localstack awslocal ssm put-parameter \
-  --name "/nalukataq/dev/TWILIO_TOKEN" \
+  --name "/pakak/dev/TWILIO_TOKEN" \
   --value "dummy_auth_token" \
   --type "String" \
   --overwrite
 echo "Dummy parameters created/updated."
 
 echo "Verifying dummy SSM parameters..."
-docker exec localstack awslocal ssm get-parameter --name "/nalukataq/dev/TWILIO_NUMBER"
-docker exec localstack awslocal ssm get-parameter --name "/nalukataq/dev/TWILIO_SID"
-docker exec localstack awslocal ssm get-parameter --name "/nalukataq/dev/TWILIO_TOKEN"
+docker exec localstack awslocal ssm get-parameter --name "/pakak/dev/TWILIO_NUMBER"
+docker exec localstack awslocal ssm get-parameter --name "/pakak/dev/TWILIO_SID"
+docker exec localstack awslocal ssm get-parameter --name "/pakak/dev/TWILIO_TOKEN"
 echo "Verification complete."
 
 echo "Deploying to LocalStack (using serverless)…"
@@ -50,7 +50,7 @@ docker exec \
   -e AWS_SECRET_ACCESS_KEY="test" \
   -e AWS_SSM_ENDPOINT="http://localstack:4566" \
   -e AWS_ENDPOINT_URL="http://localstack:4566" \
-  nalukataq-app \
+  pakak-app \
   sh -c "serverless deploy --stage dev"
 echo "Deployment to LocalStack complete."
 
