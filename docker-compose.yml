@@ -3,19 +3,19 @@ services:
     image: localstack/localstack:latest
     container_name: localstack
     ports:
-      - "4566:4566"          # unified edge port
+      - '4566:4566' # unified edge port
     environment:
       - LOCALSTACK_SERVICES=cloudformation,sts,s3,sqs,dynamodb,ssm,events,logs,iam,lambda,apigateway
       - LOCALSTACK_PERSISTENCE=0
     volumes:
       - localstack_data:/var/lib/localstack
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - '/var/run/docker.sock:/var/run/docker.sock'
 
   mongo:
     image: mongo:6.0
-    container_name: nalukataq-mongo
+    container_name: pakak-mongo
     ports:
-      - "27017:27017"
+      - '27017:27017'
     volumes:
       - mongo_data:/data/db
 
@@ -23,16 +23,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: nalukataq-app
+    container_name: pakak-app
     working_dir: /app
     # command: npm run offline
-    command: ["tail", "-f", "/dev/null"]
+    command: ['tail', '-f', '/dev/null']
     # ports:
     #   - "3000:3000"
     # env_file:
     #   - .env.dev
     volumes:
-      - ./:/app 
+      - ./:/app
     depends_on:
       - localstack
       - mongo

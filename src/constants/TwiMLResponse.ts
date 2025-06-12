@@ -59,6 +59,6 @@ export const TWI_ML_RESPONSE = {
     '<Response><Message>Your data deletion request has been received. This will also unsubscribe you from messages. It will be processed shortly.</Message></Response>',
   ),
   TRY_AGAIN_NEXT_DAY_AFTER_DELETION: asTwimlXmlString(
-    '<Response><Message>You have requested data deletion. Please try to resubscribe again tomorrow.</Message></Response>',
+    '<Response><Message>You have requested data deletion and have been unsubscribed. Please try to resubscribe again tomorrow.</Message></Response>',
   ),
 };
