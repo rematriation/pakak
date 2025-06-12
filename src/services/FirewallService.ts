@@ -8,6 +8,7 @@ import { Command } from '../constants/Command';
 import { TWI_ML_RESPONSE } from '../constants/TwiMLResponse';
 import { ISQSService, ISQSServiceToken } from '../libs/SQSService';
 import { IAppConfig, IAppConfigToken } from '../configs/AppConfig';
+import { IIncomingMessage } from '../models/IncomingMessage';
 
 @injectable()
 export class FirewallService {
@@ -20,10 +21,10 @@ export class FirewallService {
   async processMessage(
     phoneNumber: string,
     user: IUser,
-    parsedTwilioParams: Record<string, string | undefined>,
+    incomingMsg: IIncomingMessage,
   ): Promise<APIGatewayProxyResult> {
-    const msgBody = sanitizeTxtMessage(parsedTwilioParams.Body);
-    parsedTwilioParams.Body = msgBody;
+    const msgBody = sanitizeTxtMessage(incomingMsg.messageText);
+    incomingMsg.messageText = msgBody;
     const cmd = extractCommandKeyword(msgBody);
 
     if (user.awaitingDeletion) {
@@ -52,7 +53,7 @@ export class FirewallService {
     );
     void this.sqsService.sendMessage(
       this.appConfig.incomingSqsQueueUrl,
-      JSON.stringify(parsedTwilioParams),
+      JSON.stringify(incomingMsg),
       phoneNumber,
     );
 
@@ -131,6 +132,6 @@ export class FirewallService {
       await this.userRepository.releaseProcessingLock(phoneNumber);
     }
 
-    return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
+    return twilioResponse(TWI_ML_RESPONSE.SUBSCRIPTION_CONFIRMATION);
   }
 }

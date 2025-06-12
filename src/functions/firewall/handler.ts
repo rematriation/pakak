@@ -15,6 +15,7 @@ import {
 import { twilioResponse } from '../../libs/responseHelpers';
 import { SQSService, ISQSServiceToken } from '../../libs/SQSService';
 import { AppConfig, IAppConfigToken } from '../../configs/AppConfig';
+import { IIncomingMessage } from '../../models/IncomingMessage';
 
 container.register(IAppConfigToken, { useClass: AppConfig });
 const userRepository: UserRepository = container.resolve(UserRepository);
@@ -53,8 +54,9 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
   let errorRaised: boolean = false;
   let delegatedToService: boolean = false;
   try {
-    const twilioParsedParams = parseAndValidatePostBody(event);
-    phoneNumber = validatePhoneNumber(twilioParsedParams);
+    const incomingMessage: IIncomingMessage = parseAndValidatePostBody(event);
+    phoneNumber = incomingMessage.phoneNumber;
+    validatePhoneNumber(phoneNumber);
 
     const user: IUser | null = await userRepository.getUser(phoneNumber);
 
@@ -73,7 +75,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
     }
 
     delegatedToService = true;
-    return firewallService.processMessage(phoneNumber, user, twilioParsedParams);
+    return firewallService.processMessage(phoneNumber, user, incomingMessage);
   } catch (err: unknown) {
     errorRaised = true;
     if (err instanceof AppError) {

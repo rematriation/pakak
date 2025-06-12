@@ -2,6 +2,7 @@ import { APIGatewayProxyEvent } from 'aws-lambda';
 import { AppError } from './errors/AppError';
 import { ErrorCode } from './errors/ErrorCode';
 import { decodeAndParseBody } from './twilioParser';
+import { IIncomingMessage } from '../models/IncomingMessage';
 
 export function validateHttpMethod(
   method: string | undefined | null,
@@ -34,19 +35,14 @@ export function validateHttpMethod(
  * @param event The API Gateway event.
  * @returns Parsed body parameters.
  */
-export function parseAndValidatePostBody(
-  event: APIGatewayProxyEvent,
-): Record<string, string | undefined> {
+export function parseAndValidatePostBody(event: APIGatewayProxyEvent): IIncomingMessage {
   if (!event.body) {
     console.warn('RequestValidator :: Missing request body. event::', event);
     throw new AppError(ErrorCode.MISSING_BODY, 'Missing request body.');
   }
 
   try {
-    const params: Record<string, string | undefined> = decodeAndParseBody(
-      event.body,
-      event.isBase64Encoded,
-    );
+    const params: IIncomingMessage = decodeAndParseBody(event.body, event.isBase64Encoded);
     return params;
   } catch (err: unknown) {
     if (err instanceof AppError) {
@@ -72,17 +68,7 @@ export function parseAndValidatePostBody(
  * @returns The validated phone number string.
  * @throws AppError if the phone number is missing or has an invalid format.
  */
-export function validatePhoneNumber(params: Record<string, string | undefined>): string {
-  const phoneNumber = params.From; // Assuming 'From' is the phone number field
-
-  if (!phoneNumber) {
-    console.warn('RequestValidator :: Missing phone number in Twilio params.');
-    throw new AppError(
-      ErrorCode.MISSING_TWILIO_FIELD,
-      'Missing phone number in Twilio parameters.',
-    );
-  }
-
+export function validatePhoneNumber(phoneNumber: string): void {
   const e164Regex = /^\+[1-9]\d{1,14}$/;
 
   if (!e164Regex.test(phoneNumber)) {
@@ -92,6 +78,4 @@ export function validatePhoneNumber(params: Record<string, string | undefined>):
       'Invalid phone number format. Must be in E.164 format (e.g., +15551234567).',
     );
   }
-
-  return phoneNumber;
 }
