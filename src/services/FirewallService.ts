@@ -25,62 +25,58 @@ export class FirewallService {
     const msgBody = sanitizeTxtMessage(parsedTwilioParams.Body);
     parsedTwilioParams.Body = msgBody;
     const cmd = extractCommandKeyword(msgBody);
-    let pushToSqs: boolean = false;
-    let response: APIGatewayProxyResult = twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
-    if (!user.subscriptionStatus && cmd != Command.START) {
-      response = this.#handleUnsubscribedUser(phoneNumber);
-    } else {
-      switch (cmd) {
-        case Command.START:
-          response = this.#subscribeUser(
-            phoneNumber,
-            user.subscriptionStatus,
-            user.awaitingDeletion,
-          );
-          break;
-        case Command.DELETE:
-          response = this.#deleteUserData(phoneNumber);
-          break;
-        case Command.HELP:
-          response = this.#returnHelpMessage(phoneNumber);
-          break;
-        case Command.INU:
-          response = this.#returnInupiatValues(phoneNumber);
-          break;
-        default:
-          pushToSqs = true;
-      }
 
-      if (pushToSqs) {
-        console.debug(
-          `FirewallService :: Pushing message to ${this.appConfig.incomingSqsQueueUrl} with msg :: `,
-        );
-        void this.sqsService.sendMessage(
-          this.appConfig.incomingSqsQueueUrl,
-          JSON.stringify(parsedTwilioParams),
-          phoneNumber,
-        );
-        // need to comment the below line once worker implementation starts
-        void this.userRepository.releaseProcessingLock(phoneNumber);
-      } else {
-        // added redundancy
-        void this.userRepository.releaseProcessingLock(phoneNumber);
-      }
+    if (user.awaitingDeletion) {
+      return this.#handleUserAwaitingDeletion(phoneNumber);
     }
 
-    return Promise.resolve(response);
+    if (!user.subscriptionStatus && cmd != Command.START) {
+      return this.#handleUnsubscribedUser(phoneNumber);
+    }
+
+    switch (cmd) {
+      case Command.START:
+        return this.#subscribeUser(phoneNumber, user.subscriptionStatus);
+      case Command.DELETE:
+        return this.#deleteUserData(phoneNumber);
+      case Command.HELP:
+        return this.#returnHelpMessage(phoneNumber);
+      case Command.INU:
+        return this.#returnInupiatValues(phoneNumber);
+      case Command.STOP:
+        return this.#unsubscribeUser(phoneNumber);
+    }
+
+    console.debug(
+      `FirewallService :: Pushing message to ${this.appConfig.incomingSqsQueueUrl} with msg :: `,
+    );
+    void this.sqsService.sendMessage(
+      this.appConfig.incomingSqsQueueUrl,
+      JSON.stringify(parsedTwilioParams),
+      phoneNumber,
+    );
+
+    await this.userRepository.releaseProcessingLock(phoneNumber);
+    return twilioResponse(TWI_ML_RESPONSE.THANK_YOU);
   }
 
-  /**
-   * Requests user to send START message.
-   *
-   * @param phoneNumber phone number of user
-   * @returns APIGatewayProxyResult
-   */
-  #handleUnsubscribedUser(phoneNumber: string): APIGatewayProxyResult {
+  async #handleUserAwaitingDeletion(phoneNumber: string): Promise<APIGatewayProxyResult> {
+    console.debug(`FirewallService :: User ${phoneNumber} is awaiting deletion and unsubscribed.`);
+    await this.userRepository.releaseProcessingLock(phoneNumber);
+    return twilioResponse(TWI_ML_RESPONSE.TRY_AGAIN_NEXT_DAY_AFTER_DELETION);
+  }
+
+  async #unsubscribeUser(phoneNumber: string): Promise<APIGatewayProxyResult> {
+    console.debug(`FirewallService :: Unsubscribing ${phoneNumber}.`);
+    await this.userRepository.setSubscription(phoneNumber, false);
+    return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
+  }
+
+  async #handleUnsubscribedUser(phoneNumber: string): Promise<APIGatewayProxyResult> {
     console.debug(
       `FirewallService :: User ${phoneNumber} is unsubscribed. Returning subscribe message.`,
     );
+    await this.userRepository.releaseProcessingLock(phoneNumber);
     return twilioResponse(TWI_ML_RESPONSE.PROMPT_START_MESSAGE);
   }
 
@@ -90,9 +86,9 @@ export class FirewallService {
    * @param phoneNumber phone number of user
    * @returns APIGatewayProxyResult object containing TwiML with deletion confirmation message.
    */
-  #deleteUserData(phoneNumber: string): APIGatewayProxyResult {
+  async #deleteUserData(phoneNumber: string): Promise<APIGatewayProxyResult> {
     console.debug(`FirewallService :: User ${phoneNumber} requested to delete their data.`);
-    void this.userRepository.setAwaitingDeletion(phoneNumber, 1);
+    await this.userRepository.setAwaitingDeletion(phoneNumber, 1);
     return twilioResponse(TWI_ML_RESPONSE.DELETE_CONFIRMATION_MESSAGE);
   }
 
@@ -102,50 +98,39 @@ export class FirewallService {
    * @param phoneNumber phone number of user requesting Inupiat values
    * @returns APIGatewayProxyResult object containing Inupiat values message.
    */
-  #returnInupiatValues(phoneNumber: string): APIGatewayProxyResult {
+  async #returnInupiatValues(phoneNumber: string): Promise<APIGatewayProxyResult> {
     console.debug(`FirewallService :: User ${phoneNumber} requested for Inupiat values.`);
+    await this.userRepository.releaseProcessingLock(phoneNumber);
     return twilioResponse(TWI_ML_RESPONSE.INUPIAT_VALUES_MESSAGE);
   }
 
   /**
-   * Returns help message for user.
    *
    * @param phoneNumber phone number of user requesting.
-   * @returns APIGatewayProxyResult object containing help message.
+   * @returns
    */
-  #returnHelpMessage(phoneNumber: string): APIGatewayProxyResult {
-    console.debug(`FirewallService :: User ${phoneNumber} requested for HELP.`);
-    return twilioResponse(TWI_ML_RESPONSE.HELP_MESSAGE);
+  async #returnHelpMessage(phoneNumber: string): Promise<APIGatewayProxyResult> {
+    console.debug(
+      `FirewallService :: User ${phoneNumber} requested for HELP. Twilio will send the message.`,
+    );
+    await this.userRepository.releaseProcessingLock(phoneNumber);
+    return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
   }
 
-  /**
-   * Subscribes user to the service if user isn't subscribed and didn't request deletion prior.
-   * Releases processes lock as well.
-   *
-   * @param phoneNumber phone number of user requesting to subscribe.
-   * @param subscriptionStatus current subscription status of user.
-   * @param awaitingDeletion if user has previously requested to delete.
-   * @returns APIGatewayProxyResult with TwiML response.
-   */
-  #subscribeUser(
+  async #subscribeUser(
     phoneNumber: string,
     subscriptionStatus: boolean,
-    awaitingDeletion: number,
-  ): APIGatewayProxyResult {
-    let response: APIGatewayProxyResult;
-
-    if (awaitingDeletion) {
-      console.debug(`FirewallService :: User tried to subscribed after requesting deletion.`);
-      response = twilioResponse(TWI_ML_RESPONSE.TRY_AGAIN_NEXT_DAY_AFTER_DELETION);
-    } else if (!subscriptionStatus) {
-      console.debug(`FirewallService :: Subscribing ${phoneNumber}.`);
-      void this.userRepository.setSubscription(phoneNumber, true);
-      response = twilioResponse(TWI_ML_RESPONSE.SUBSCRIPTION_CONFIRMATION);
+  ): Promise<APIGatewayProxyResult> {
+    if (!subscriptionStatus) {
+      console.debug(`FirewallService :: Subscribing ${phoneNumber}. Twilio will send the message.`);
+      await this.userRepository.setSubscription(phoneNumber, true);
     } else {
-      console.debug(`FirewallService :: User ${phoneNumber} already susbcribed.`);
-      response = twilioResponse(TWI_ML_RESPONSE.ALREADY_SUBSCRIBED);
+      console.debug(
+        `FirewallService :: User ${phoneNumber} already susbcribed. Twilio will send the message.`,
+      );
+      await this.userRepository.releaseProcessingLock(phoneNumber);
     }
 
-    return response;
+    return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
   }
 }
