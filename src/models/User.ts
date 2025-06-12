@@ -80,6 +80,6 @@ const userSchema = new dynamoose.Schema(
 );
 
 export const UserModel = dynamoose.model(
-  process.env.DYNAMODB_TABLE || 'pakakUsers-dev',
+  process.env.DYNAMODB_TABLE || 'PakakUsers-dev',
   userSchema,
 );
