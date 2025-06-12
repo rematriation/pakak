@@ -195,7 +195,7 @@ resources:
     StaticAssetsBucket:
       Type: AWS::S3::Bucket
       Properties:
-        BucketName: pakak$-{self:provider.stage}-static-assets
+        BucketName: pakak-${self:provider.stage}-static-assets
         PublicAccessBlockConfiguration:
           BlockPublicPolicy: false
           RestrictPublicBuckets: false
