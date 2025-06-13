@@ -53,10 +53,7 @@ export function parseAndValidatePostBody(event: APIGatewayProxyEvent): IIncoming
       throw err; // Re-throw AppError to be handled upstream
     }
     console.error({ err }, 'RequestValidator :: Unhandled exception during body parsing.');
-    throw new AppError(
-      ErrorCode.INTERNAL_SERVER_ERROR,
-      'An unexpected error occurred during request parsing.',
-    );
+    throw err;
   }
 }
 
