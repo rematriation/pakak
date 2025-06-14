@@ -10,12 +10,16 @@ import { UserRepository } from '../../repositories/UserRepository';
 import { SQSEvent } from 'aws-lambda';
 import { AppError } from '../../libs/errors/AppError';
 import { TWI_ML_RESPONSE } from '../../constants/TwiMLResponse';
-import { SQSService, ISQSServiceToken, ISQSService } from '../../libs/SQSService';
+import { SQSService, ISQSServiceToken, ISQSService } from '../../infrastructure/SQSService';
 import { AppConfig, IAppConfigToken } from '../../configs/AppConfig';
 import { IIncomingMessage } from '../../models/IncomingMessage';
 import { UserProfileRepository } from '../../repositories/UserProfileRepository';
 import { IOutgoingMessage } from '../../models/OutgoingMessage';
 import { WorkerService } from '../../services/WorkerService';
+import {
+  CampaignLoaderService,
+  ICampaignLoaderServiceToken,
+} from '../../infrastructure/CampaignLoaderService';
 
 container.register(IAppConfigToken, { useClass: AppConfig });
 const appConfig: AppConfig = container.resolve(IAppConfigToken);
@@ -23,6 +27,8 @@ container.resolve(UserRepository);
 container.register(ISQSServiceToken, { useClass: SQSService });
 const sqsService: ISQSService = container.resolve(ISQSServiceToken);
 container.resolve(UserProfileRepository);
+container.register(ICampaignLoaderServiceToken, { useClass: CampaignLoaderService });
+container.resolve(CampaignLoaderService);
 
 const workerService: WorkerService = container.resolve(WorkerService);
 

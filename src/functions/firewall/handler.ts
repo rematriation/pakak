@@ -13,7 +13,7 @@ import {
   validatePhoneNumber,
 } from '../../libs/requestValidator';
 import { twilioResponse } from '../../libs/responseHelpers';
-import { SQSService, ISQSServiceToken } from '../../libs/SQSService';
+import { SQSService, ISQSServiceToken } from '../../infrastructure/SQSService';
 import { AppConfig, IAppConfigToken } from '../../configs/AppConfig';
 import { IIncomingMessage } from '../../models/IncomingMessage';
 
@@ -115,7 +115,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
     }
   } finally {
     if (phoneNumber && lockAcquired && (errorRaised || !delegatedToService)) {
-      void userRepository.releaseProcessingLock(phoneNumber);
+      await userRepository.releaseProcessingLock(phoneNumber);
     }
   }
 }

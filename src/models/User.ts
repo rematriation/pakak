@@ -1,5 +1,5 @@
 import { ValueType } from 'dynamoose/dist/Schema';
-import dynamoose from '../libs/dynamoose';
+import dynamoose from '../infrastructure/dynamoose';
 import { ConversationState } from 'twilio/lib/rest/conversations/v1/conversation';
 import { IConversationContext } from './ConversationContext';
 

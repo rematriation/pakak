@@ -4,7 +4,6 @@
  * @desc Campaign related data models.
  */
 
-import mongoose, { Schema, Document } from 'mongoose';
 import { ExpectedResponseType } from '../constants/ExpectedResponseType';
 
 /**
@@ -24,7 +23,7 @@ export interface IQuestionStep {
  * Defines the structure of a Campaign Definition document stored in MongoDB.
  * This represents a conversational flow.
  */
-export interface ICampaignDefinition extends Document {
+export interface ICampaignDefinition {
   _id: string;
   name: string;
   description?: string;
@@ -34,41 +33,3 @@ export interface ICampaignDefinition extends Document {
   steps: IQuestionStep[];
   isActive: boolean;
 }
-
-const CampaignDefinitionSchema: Schema = new Schema(
-  {
-    _id: { type: String, required: true },
-    name: { type: String, required: true },
-    description: { type: String, required: false },
-    initialMessage: { type: String, required: false },
-    fallbackMessage: { type: String, required: false },
-    timeoutMessage: { type: String, required: false },
-    steps: [
-      {
-        stepId: { type: String, required: true },
-        prompt: { type: String, required: true },
-        expectedResponseType: {
-          type: String,
-          required: true,
-          enum: Object.values(ExpectedResponseType),
-        },
-        validationRegex: { type: String, required: false },
-        nextStepId: { type: String, required: false },
-        fieldName: { type: String, required: false },
-        fallbackMessage: { type: String, required: false },
-        _id: false,
-      },
-    ],
-    isActive: { type: Boolean, required: true, default: true },
-  },
-  {
-    timestamps: true,
-    collection: 'CampaignDefinitions',
-  },
-);
-
-const CampaignDefinitionModel = mongoose.model<ICampaignDefinition>(
-  'CampaignDefinition',
-  CampaignDefinitionSchema,
-);
-export default CampaignDefinitionModel;

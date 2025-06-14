@@ -1,0 +1,51 @@
+[
+  {
+    "_id": "user_profile_creation",
+    "name": "User Profile Creation Flow",
+    "description": "Collects user's name, village, and zip code.",
+    "initialMessage": "Let's personalize your experience! What's your full name?",
+    "fallbackMessage": "I didn't get that. Please provide a valid answer for the current question.",
+    "timeoutMessage": "It seems you're busy. Your profile update session has ended. You can start a new one anytime.",
+    "steps": [
+      {
+        "stepId": "ask_name",
+        "prompt": "What's your full name?",
+        "expectedResponseType": "TEXT",
+        "validationRegex": "^[A-Za-z\\s.'-]+$",
+        "nextStepId": "ask_village",
+        "fieldName": "name",
+        "fallbackMessage": "That doesn't look like a valid name. Please tell me your full name (letters, spaces, periods, hyphens, and apostrophes allowed)."
+      },
+      {
+        "stepId": "ask_village",
+        "prompt": "Which village are you from?",
+        "expectedResponseType": "TEXT",
+        "validationRegex": "^[A-Za-z\\s.'-]+$",
+        "nextStepId": "ask_zipcode",
+        "fieldName": "village",
+        "fallbackMessage": "I didn't get a valid village name. Please tell me which village you're from (letters, spaces, periods, hyphens, and apostrophes allowed)."
+      },
+      {
+        "stepId": "ask_zipcode",
+        "prompt": "What's your 5-digit zip code?",
+        "expectedResponseType": "NUMBER",
+        "validationRegex": "^\\d{5}$",
+        "nextStepId": "complete_profile_flow",
+        "fieldName": "zipCode",
+        "fallbackMessage": "That's not a valid 5-digit zip code. Please enter only 5 digits (e.g., 90210)."
+      },
+      {
+        "stepId": "complete_profile_flow",
+        "prompt": "Great! Your profile is now updated. Thank you!",
+        "expectedResponseType": "NONE"
+      }
+    ],
+    "isActive": true,
+    "createdAt": {
+      "$date": "2025-06-13T10:00:00.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-06-13T10:00:00.000Z"
+    }
+  }
+]

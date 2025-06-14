@@ -6,7 +6,7 @@ import { APIGatewayProxyResult } from 'aws-lambda';
 import { extractCommandKeyword, sanitizeTxtMessage } from '../libs/messageHelper';
 import { Command } from '../constants/Command';
 import { TWI_ML_RESPONSE } from '../constants/TwiMLResponse';
-import { ISQSService, ISQSServiceToken } from '../libs/SQSService';
+import { ISQSService, ISQSServiceToken } from '../infrastructure/SQSService';
 import { IAppConfig, IAppConfigToken } from '../configs/AppConfig';
 import { IIncomingMessage } from '../models/IncomingMessage';
 
@@ -49,13 +49,13 @@ export class FirewallService {
     console.debug(
       `FirewallService :: Pushing message to ${this.appConfig.incomingSqsQueueUrl} with msg :: `,
     );
-    void this.sqsService.sendMessage(
+    await this.sqsService.sendMessage(
       this.appConfig.incomingSqsQueueUrl,
       JSON.stringify(incomingMsg),
       phoneNumber,
     );
     if (cmd === Command.START) {
-      return twilioResponse(TWI_ML_RESPONSE.SUBSCRIPTION_CONFIRMATION);
+      return this.#subscribeUser(phoneNumber, user.subscriptionStatus);
     }
     return twilioResponse(TWI_ML_RESPONSE.THANK_YOU);
   }
@@ -121,16 +121,17 @@ export class FirewallService {
     phoneNumber: string,
     subscriptionStatus: boolean,
   ): Promise<APIGatewayProxyResult> {
+    let response: APIGatewayProxyResult;
     if (!subscriptionStatus) {
-      console.debug(`FirewallService :: Subscribing ${phoneNumber}. Twilio will send the message.`);
+      console.debug(`FirewallService :: Subscribing ${phoneNumber}.`);
       await this.userRepository.setSubscription(phoneNumber, true);
+      response = twilioResponse(TWI_ML_RESPONSE.SUBSCRIPTION_CONFIRMATION);
     } else {
-      console.debug(
-        `FirewallService :: User ${phoneNumber} already susbcribed. Twilio will send the message.`,
-      );
+      console.debug(`FirewallService :: User ${phoneNumber} already susbcribed.`);
       await this.userRepository.releaseProcessingLock(phoneNumber);
+      response = twilioResponse(TWI_ML_RESPONSE.ALREADY_SUBSCRIBED);
     }
 
-    return twilioResponse(TWI_ML_RESPONSE.SUBSCRIPTION_CONFIRMATION);
+    return response;
   }
 }

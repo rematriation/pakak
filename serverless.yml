@@ -101,7 +101,8 @@ functions:
     events:
       - sqs:
           arn: { 'Fn::GetAtt': [IncomingQueue, Arn] }
-          batchSize: 10
+          batchSize: 1
+          maximumBatchingWindow: 0
 
   scanner:
     handler: dist/functions/scanner/handler.handler

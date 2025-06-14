@@ -1,7 +1,7 @@
 import { IUser, UserModel } from '../models/User';
 import { Condition } from 'dynamoose/dist/Condition';
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { checkErrorisConditionalCheckFailedException } from '../libs/dynamoose';
+import { checkErrorisConditionalCheckFailedException } from '../infrastructure/dynamoose';
 import { injectable } from 'tsyringe';
 import { ConversationState } from 'twilio/lib/rest/conversations/v1/conversation';
 
