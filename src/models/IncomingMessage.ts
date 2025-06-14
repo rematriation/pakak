@@ -9,17 +9,17 @@
  * This is the contract between FirewallService (producer) and Worker Lambda (consumer).
  */
 export interface IIncomingMessage {
-  messageSid: string;
+  readonly messageSid: string;
 
   // Sender information
-  phoneNumber: string;
-  fromCity?: string;
-  fromState?: string;
-  fromZip?: string;
+  readonly phoneNumber: string;
+  readonly fromCity?: string;
+  readonly fromState?: string;
+  readonly fromZip?: string;
 
   // Message content
   messageText?: string;
-  numMedia: number;
-  mediaUrls?: string[];
-  mediaContentTypes?: string[];
+  readonly numMedia: number;
+  readonly mediaUrls?: string[];
+  readonly mediaContentTypes?: string[];
 }

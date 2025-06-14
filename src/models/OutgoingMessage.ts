@@ -10,9 +10,9 @@
  * Contains "from" field for scalability, even though the app uses only a single phone number.
  */
 export interface IOutgoingMessage {
-  to: string;
-  from: string;
-  body?: string;
-  mediaUrl?: string[];
-  statusCallback?: string;
+  readonly to: string;
+  readonly from: string;
+  readonly body?: string;
+  readonly mediaUrl?: string[];
+  readonly statusCallback?: string;
 }

@@ -25,7 +25,7 @@ export class FirewallService {
   ): Promise<APIGatewayProxyResult> {
     const msgBody = sanitizeTxtMessage(incomingMsg.messageText);
     incomingMsg.messageText = msgBody;
-    const cmd = extractCommandKeyword(msgBody);
+    const cmd: Command | null = extractCommandKeyword(msgBody);
 
     if (user.awaitingDeletion) {
       return this.#handleUserAwaitingDeletion(phoneNumber);
@@ -36,8 +36,6 @@ export class FirewallService {
     }
 
     switch (cmd) {
-      case Command.START:
-        return this.#subscribeUser(phoneNumber, user.subscriptionStatus);
       case Command.DELETE:
         return this.#deleteUserData(phoneNumber);
       case Command.HELP:
@@ -56,8 +54,9 @@ export class FirewallService {
       JSON.stringify(incomingMsg),
       phoneNumber,
     );
-
-    await this.userRepository.releaseProcessingLock(phoneNumber);
+    if (cmd === Command.START) {
+      return twilioResponse(TWI_ML_RESPONSE.SUBSCRIPTION_CONFIRMATION);
+    }
     return twilioResponse(TWI_ML_RESPONSE.THANK_YOU);
   }
 

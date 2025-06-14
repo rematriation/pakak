@@ -1,5 +1,7 @@
 import { ValueType } from 'dynamoose/dist/Schema';
 import dynamoose from '../libs/dynamoose';
+import { ConversationState } from 'twilio/lib/rest/conversations/v1/conversation';
+import { IConversationContext } from './ConversationContext';
 
 /**
  * IUser describes the attribute shape in DynamoDB.
@@ -19,6 +21,8 @@ export interface IUser {
   rateLimitCounter?: number | null;
   rateLimitWindowExpiresAt?: string;
   awaitingDeletion: number;
+  conversationState?: ConversationState;
+  conversationContext?: IConversationContext;
   createdAt?: string;
   updatedAt?: string;
 }
