@@ -28,9 +28,11 @@ export class MongooseConnectionService {
     }
 
     try {
+      console.debug('Trying to connect to mongodB');
       await mongoose.connect(this.appConfig.mongodbURI, {
         dbName: this.appConfig.mongodbDBName,
       });
+      console.debug('Connected to MongoDB');
 
       this.isConnected = true;
       console.log('MongooseConnectionService :: Connected to MongoDB Atlas successfully.');

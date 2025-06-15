@@ -20,19 +20,31 @@ import {
   CampaignLoaderService,
   ICampaignLoaderServiceToken,
 } from '../../infrastructure/CampaignLoaderService';
+import { MongooseConnectionService } from '../../infrastructure/mongoose';
 
 container.register(IAppConfigToken, { useClass: AppConfig });
 const appConfig: AppConfig = container.resolve(IAppConfigToken);
+
+container.register(MongooseConnectionService, { useClass: MongooseConnectionService });
+const mongooseConnectionService: MongooseConnectionService =
+  container.resolve(MongooseConnectionService);
+
+container.register(UserRepository, { useClass: UserRepository });
 container.resolve(UserRepository);
+
 container.register(ISQSServiceToken, { useClass: SQSService });
 const sqsService: ISQSService = container.resolve(ISQSServiceToken);
+
+container.register(UserProfileRepository, { useClass: UserProfileRepository });
 container.resolve(UserProfileRepository);
+
 container.register(ICampaignLoaderServiceToken, { useClass: CampaignLoaderService });
 container.resolve(CampaignLoaderService);
 
 const workerService: WorkerService = container.resolve(WorkerService);
 
 export const handler = async (event: SQSEvent): Promise<void> => {
+  await mongooseConnectionService.connect();
   console.log('Worker Handler :: Received SQS event:', JSON.stringify(event, null, 2));
   for (const record of event.Records) {
     let incommingMessage: IIncomingMessage;

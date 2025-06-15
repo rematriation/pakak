@@ -1,7 +1,7 @@
 import { ValueType } from 'dynamoose/dist/Schema';
 import dynamoose from '../infrastructure/dynamoose';
-import { ConversationState } from 'twilio/lib/rest/conversations/v1/conversation';
-import { IConversationContext } from './ConversationContext';
+import { ConversationState } from '../constants/ConversationState';
+import { ICampaignContext } from './CampaignContext';
 
 /**
  * IUser describes the attribute shape in DynamoDB.
@@ -22,7 +22,7 @@ export interface IUser {
   rateLimitWindowExpiresAt?: string;
   awaitingDeletion: number;
   conversationState?: ConversationState;
-  conversationContext?: IConversationContext;
+  campaignContext?: ICampaignContext;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -73,6 +73,26 @@ const userSchema = new dynamoose.Schema(
         if (typeof v !== 'number') return false;
         return v === 0 || v === 1;
       },
+    },
+    conversationState: {
+      type: String,
+      enum: Object.values(ConversationState),
+      required: false,
+      default: ConversationState.AWAITING_IMAGE_UPLOAD,
+    },
+    campaignContext: {
+      type: Object,
+      schema: {
+        flowId: {
+          type: String,
+          default: 'NONE',
+        },
+        currentStepId: {
+          type: String,
+          default: 'NONE',
+        },
+      },
+      default: {},
     },
   },
   {

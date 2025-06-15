@@ -60,6 +60,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
     validatePhoneNumber(phoneNumber);
 
     const user: IUser | null = await userRepository.getUser(phoneNumber);
+    console.log('User :: ', user);
 
     if (!user) {
       return createNewUser(phoneNumber);

@@ -3,7 +3,7 @@ import { Condition } from 'dynamoose/dist/Condition';
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { checkErrorisConditionalCheckFailedException } from '../infrastructure/dynamoose';
 import { injectable } from 'tsyringe';
-import { ConversationState } from 'twilio/lib/rest/conversations/v1/conversation';
+import { ConversationState } from '../constants/ConversationState';
 
 @injectable()
 export class UserRepository {
@@ -103,36 +103,31 @@ export class UserRepository {
   }
 
   /**
-   * Updates a user's conversation state and context data in a single atomic operation.
+   * Updates a user's conversation state and campaign context data in a single atomic operation.
    *
    * @param phone The user's phone number.
    * @param conversationState The new state of the conversation.
    * @param flowId The current flow ID.
    * @param currentStepId The current step ID within the flow.
-   * @param collectedDataToMerge A map of key-value pairs to merge into the user's `collectedData`.
    */
   async updateConversation(
     phone: string,
     conversationState: ConversationState,
     flowId: string,
     currentStepId: string,
-    collectedDataToMerge: Record<string, string>,
   ): Promise<void> {
-    const setOperations: Record<string, string> = {};
-
-    setOperations.conversationState = conversationState;
-    setOperations['conversationContextData.flowId'] = flowId;
-    setOperations['conversationContextData.currentStepId'] = currentStepId;
-
-    for (const [key, value] of Object.entries(collectedDataToMerge)) {
-      if (value !== undefined) {
-        setOperations[`conversationContextData.collectedData.${key}`] = value;
-      }
-    }
-
+    const updatesLog = { conversationState, campaignContext: { flowId, currentStepId } };
     try {
-      await UserModel.update({ phone }, { $set: setOperations });
-      const updatesLog = { conversationState, flowId, currentStepId, collectedDataToMerge };
+      await UserModel.update(
+        { phone },
+        {
+          conversationState: conversationState,
+          campaignContext: {
+            flowId: flowId,
+            currentStepId: currentStepId,
+          },
+        },
+      );
       console.debug(
         `UserRepository.updateConversation :: Updated conversation context for ${phone} with ${JSON.stringify(updatesLog)}`,
       );
@@ -140,8 +135,8 @@ export class UserRepository {
       console.error(
         `UserRepository.updateConversation :: Error updating conversation context for ${phone}:`,
         error,
-        ` :: setOperation :: `,
-        setOperations,
+        ` :: updates:  `,
+        updatesLog,
       );
       throw error;
     }

@@ -4,8 +4,7 @@
  * @desc Conversation Context
  */
 
-export interface IConversationContext {
+export interface ICampaignContext {
   flowId: string;
   currentStepId: string;
-  collectedData: Record<string, string>;
 }
