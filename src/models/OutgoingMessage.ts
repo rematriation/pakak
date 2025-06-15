@@ -10,6 +10,7 @@
  * Contains "from" field for scalability, even though the app uses only a single phone number.
  */
 export interface IOutgoingMessage {
+  readonly forSid: string;
   readonly to: string;
   readonly from: string;
   readonly body?: string;

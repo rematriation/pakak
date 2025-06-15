@@ -41,11 +41,12 @@ container.resolve(UserProfileRepository);
 container.register(ICampaignLoaderServiceToken, { useClass: CampaignLoaderService });
 container.resolve(CampaignLoaderService);
 
+container.register(WorkerService, { useClass: WorkerService });
 const workerService: WorkerService = container.resolve(WorkerService);
 
 export const handler = async (event: SQSEvent): Promise<void> => {
   await mongooseConnectionService.connect();
-  console.log('Worker Handler :: Received SQS event:', JSON.stringify(event, null, 2));
+  console.debug('Worker Handler :: Received SQS event:', JSON.stringify(event, null, 2));
   for (const record of event.Records) {
     let incommingMessage: IIncomingMessage;
     try {
@@ -58,16 +59,17 @@ export const handler = async (event: SQSEvent): Promise<void> => {
       } catch (err: unknown) {
         if (err instanceof AppError) {
           console.warn(
-            `Worker Lambda :: Couldn't process the message: ${record.body} :: error: `,
+            `Worker Handler :: Couldn't process the message: ${record.body} :: error: `,
             err,
           );
           const outgoingMessage: IOutgoingMessage = {
+            forSid: incommingMessage.messageSid,
             to: incommingMessage.phoneNumber,
             from: appConfig.twilioNumber,
             body: TWI_ML_RESPONSE.GENERIC_ERROR,
           };
           console.info(
-            `Worker Lambda :: Pushing generic error message to outgoing queue :: msg: `,
+            `Worker Handler :: Pushing generic error message to outgoing queue :: msg: `,
             outgoingMessage,
           );
           await sqsService.sendMessage(
@@ -82,7 +84,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
       }
     } catch (err: unknown) {
       console.error(
-        `Worker Lambda :: error encountered while trying to process the message: ${record.body}. error :: `,
+        `Worker Handler :: error encountered while trying to process the message: ${record.body}. error :: `,
         err,
       );
       throw err;

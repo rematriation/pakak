@@ -5,25 +5,26 @@
  */
 
 import { injectable } from 'tsyringe';
-import UserProfileModel, { IUserProfile } from '../models/UserProfile';
+import UserProfileModel, { IUserProfile, IUserProfileDocument } from '../models/UserProfile';
 import { MongoServerError } from 'mongodb';
 import { MONGO_ERROR_CODES } from '../libs/errors/MongoErrorCodes';
 import { ErrorCode } from '../libs/errors/ErrorCode';
 import { AppError } from '../libs/errors/AppError';
 import mongoose from 'mongoose';
+import { ICampaignSubmissionRepository } from './CampaignEntryRepository';
 
 /**
  * Repository for managing UserProfile data in MongoDB Atlas using Mongoose.
  */
 @injectable()
-export class UserProfileRepository {
+export class UserProfileRepository implements ICampaignSubmissionRepository {
   /**
    * Retrieves a user profile by their phone number.
    * Assumes the Mongoose connection is already established.
    * @param phoneNumber The user's phone number (which is the _id in MongoDB).
    * @returns The user profile document, or null if not found.
    */
-  public async getUserProfile(phoneNumber: string): Promise<IUserProfile | null> {
+  public async getUserProfile(phoneNumber: string): Promise<IUserProfileDocument | null> {
     try {
       // Use findById since _id is the phone number in our schema
       const userProfile = await UserProfileModel.findById(phoneNumber).exec();
@@ -44,9 +45,7 @@ export class UserProfileRepository {
    * @returns The created user profile document.
    * @throws Error if creation fails
    */
-  public async createUserProfile(
-    profileData: Omit<IUserProfile, 'createdAt' | 'updatedAt'>,
-  ): Promise<IUserProfile> {
+  public async createUserProfile(profileData: IUserProfile): Promise<IUserProfileDocument> {
     try {
       const newUserProfile = new UserProfileModel(profileData);
       const createdProfile = await newUserProfile.save();
@@ -78,8 +77,8 @@ export class UserProfileRepository {
    */
   public async updateUserProfile(
     phoneNumber: string,
-    updates: Partial<Omit<IUserProfile, '_id' | 'createdAt' | 'updatedAt'>>,
-  ): Promise<IUserProfile | null> {
+    updates: Partial<Omit<IUserProfileDocument, '_id' | 'createdAt' | 'updatedAt'>>,
+  ): Promise<IUserProfileDocument | null> {
     try {
       const updatedProfile = await UserProfileModel.findByIdAndUpdate(
         phoneNumber,
@@ -102,8 +101,11 @@ export class UserProfileRepository {
    * @param name The new name.
    * @returns The updated user profile, or null if not found.
    */
-  public async updateUserName(phoneNumber: string, name: string): Promise<IUserProfile | null> {
-    return this.#_updateProfileField(phoneNumber, { name });
+  public async updateUserName(
+    phoneNumber: string,
+    name: string,
+  ): Promise<IUserProfileDocument | null> {
+    return this.#updateProfileField(phoneNumber, { name });
   }
 
   /**
@@ -115,8 +117,8 @@ export class UserProfileRepository {
   public async updatePreferredName(
     phoneNumber: string,
     preferredName: string,
-  ): Promise<IUserProfile | null> {
-    return this.#_updateProfileField(phoneNumber, { preferredName });
+  ): Promise<IUserProfileDocument | null> {
+    return this.#updateProfileField(phoneNumber, { preferredName });
   }
 
   /**
@@ -125,8 +127,11 @@ export class UserProfileRepository {
    * @param village The new village.
    * @returns The updated user profile, or null if not found.
    */
-  public async updateVillage(phoneNumber: string, village: string): Promise<IUserProfile | null> {
-    return this.#_updateProfileField(phoneNumber, { village });
+  public async updateVillage(
+    phoneNumber: string,
+    village: string,
+  ): Promise<IUserProfileDocument | null> {
+    return this.#updateProfileField(phoneNumber, { village });
   }
 
   /**
@@ -135,8 +140,11 @@ export class UserProfileRepository {
    * @param zipCode The new zip code.
    * @returns The updated user profile, or null if not found.
    */
-  public async updateZipCode(phoneNumber: string, zipCode: string): Promise<IUserProfile | null> {
-    return this.#_updateProfileField(phoneNumber, { zipCode });
+  public async updateZipCode(
+    phoneNumber: string,
+    zipCode: string,
+  ): Promise<IUserProfileDocument | null> {
+    return this.#updateProfileField(phoneNumber, { zipCode });
   }
 
   /**
@@ -148,7 +156,7 @@ export class UserProfileRepository {
   public async addCampaignId(
     phoneNumber: string,
     campaignId: string,
-  ): Promise<IUserProfile | null> {
+  ): Promise<IUserProfileDocument | null> {
     try {
       const updatedProfile = await UserProfileModel.findByIdAndUpdate(
         phoneNumber,
@@ -171,7 +179,7 @@ export class UserProfileRepository {
    * @param phoneNumber The user's phone number (_id).
    * @returns The deleted user profile document, or null if not found.
    */
-  public async deleteUserProfile(phoneNumber: string): Promise<IUserProfile | null> {
+  public async deleteUserProfile(phoneNumber: string): Promise<IUserProfileDocument | null> {
     try {
       const deletedProfile = await UserProfileModel.findByIdAndDelete(phoneNumber).exec();
       return deletedProfile;
@@ -190,10 +198,10 @@ export class UserProfileRepository {
    * @param updateObject The update object (e.g., { name: 'New Name' }.
    * @returns The updated user profile, or null if not found.
    */
-  async #_updateProfileField(
+  async #updateProfileField(
     phoneNumber: string,
-    updateObject: mongoose.UpdateQuery<IUserProfile>,
-  ): Promise<IUserProfile | null> {
+    updateObject: mongoose.UpdateQuery<IUserProfileDocument>,
+  ): Promise<IUserProfileDocument | null> {
     try {
       const updatedProfile = await UserProfileModel.findByIdAndUpdate(phoneNumber, updateObject, {
         new: true,
@@ -203,6 +211,39 @@ export class UserProfileRepository {
     } catch (error) {
       console.error(
         `UserProfileRepository :: Error updating profile for ${phoneNumber} with ${JSON.stringify(updateObject)}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  // eslint-disable-next-line @typescript-eslint/require-await
+  public async createSubmission(campaignId: string, phoneNumber: string): Promise<void> {
+    console.error(
+      `UserProfileRepository :: createSubmission method is not implemented since it's user profile is not really a campaign submission ${campaignId}, ${phoneNumber}`,
+    );
+    throw new Error('createSubmission is not implemented in UserProfileRepository.');
+  }
+
+  /**
+   * Adds or updates a specific response field within an existing user profile (acting as a submission).
+   *
+   * @param submissionId The ID of the submission record (expected to be the user's phone number).
+   * @param fieldName The name of the field to add/update in the user profile (e.g., 'name', 'village').
+   * @param value The value of the response.
+   * @returns A Promise that resolves when the response is added.
+   * @throws Error if the user profile is not found or update fails.
+   */
+  public async addResponse(submissionId: string, fieldName: string, value: string): Promise<void> {
+    const phoneNumber = submissionId;
+    try {
+      await this.#updateProfileField(phoneNumber, { [fieldName]: String(value) });
+      console.log(
+        `UserProfileRepository :: AddResponse: Updated field '${fieldName}' for ${phoneNumber}.`,
+      );
+    } catch (error) {
+      console.error(
+        `UserProfileRepository :: AddResponse: Error updating field '${fieldName}' for ${phoneNumber}:`,
         error,
       );
       throw error;

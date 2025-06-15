@@ -19,6 +19,8 @@ export interface IAppConfig {
   logLevel: string;
   dynamoDbTable: string;
   twilioNumber: string;
+  twilioAccountSid: string;
+  twilioAuthToken: string;
   incomingSqsQueueUrl: string;
   outgoingSqsQueueUrl: string;
   awsRegion: string;
@@ -53,6 +55,8 @@ export class AppConfig implements IAppConfig {
   public readonly inupiatValuesImgName: string;
   public readonly mongodbURI: string;
   public readonly mongodbDBName: string;
+  public readonly twilioAccountSid: string;
+  public readonly twilioAuthToken: string;
 
   constructor() {
     this.appStage = this.getRequiredEnv('APP_STAGE');
@@ -68,6 +72,8 @@ export class AppConfig implements IAppConfig {
     this.inupiatValuesImgName = this.getRequiredEnv('INUPIAT_VALUES_IMAGE_NAME');
     this.mongodbURI = this.getRequiredEnv('MONGODB_URI');
     this.mongodbDBName = this.getRequiredEnv('MONGODB_DBNAME');
+    this.twilioAccountSid = this.getRequiredEnv('TWILIO_ACCOUNT_SID');
+    this.twilioAuthToken = this.getRequiredEnv('TWILIO_AUTH_TOKEN');
   }
 
   /**

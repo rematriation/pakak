@@ -6,7 +6,7 @@
 
 import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IUserProfile extends Document {
+export interface IUserProfile {
   _id: string; // Phone number in E.164 format
   name?: string;
   preferredName?: string;
@@ -14,6 +14,10 @@ export interface IUserProfile extends Document {
   zipCode?: string;
   campaignIds?: string[];
   tkLabels?: string[];
+}
+
+export interface IUserProfileDocument extends IUserProfile, Document {
+  _id: string;
 }
 
 // Regex for E.164 phone number format
@@ -81,5 +85,5 @@ const UserProfileSchema: Schema = new Schema(
   },
 );
 
-const UserProfileModel = mongoose.model<IUserProfile>('UserProfile', UserProfileSchema);
+const UserProfileModel = mongoose.model<IUserProfileDocument>('UserProfile', UserProfileSchema);
 export default UserProfileModel;

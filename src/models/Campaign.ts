@@ -17,6 +17,7 @@ export interface IQuestionStep {
   validationRegex?: string;
   nextStepId?: string;
   fieldName?: string;
+  runFlow?: string;
 }
 
 /**

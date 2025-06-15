@@ -5,6 +5,6 @@
  */
 
 export interface ICampaignContext {
-  flowId: string;
-  currentStepId: string;
+  readonly flowId: string;
+  readonly currentStepId: string;
 }

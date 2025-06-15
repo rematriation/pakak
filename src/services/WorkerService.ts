@@ -15,11 +15,14 @@ import {
 } from '../infrastructure/CampaignLoaderService';
 import { extractCommandKeyword } from '../libs/messageHelper';
 import { Command } from '../constants/Command';
-import { IUserProfile } from '../models/UserProfile';
+import { IUserProfileDocument } from '../models/UserProfile';
 import { UserProfileRepository } from '../repositories/UserProfileRepository';
 import { CampaignId } from '../constants/CampaignId';
 import { ICampaignDefinition } from '../models/Campaign';
 import { ConversationState } from '../constants/ConversationState';
+import { IUser } from '../models/User';
+import { ICampaignContext } from '../models/CampaignContext';
+import { IOutgoingMessage } from '../models/OutgoingMessage';
 
 @injectable()
 export class WorkerService {
@@ -32,14 +35,14 @@ export class WorkerService {
   ) {}
 
   async processMessage(incomingMessage: IIncomingMessage): Promise<void> {
+    console.debug(`WorkerService :: processing messaage :: `, incomingMessage);
     // check if user profile has to be created
     if (
       incomingMessage.messageText &&
       extractCommandKeyword(incomingMessage.messageText) === Command.START
     ) {
-      const userProfile: IUserProfile | null = await this.userProfileRepository.getUserProfile(
-        incomingMessage.phoneNumber,
-      );
+      const userProfile: IUserProfileDocument | null =
+        await this.userProfileRepository.getUserProfile(incomingMessage.phoneNumber);
       if (!userProfile) {
         await this.#setUserProfileCreationFlow(
           incomingMessage.phoneNumber,
@@ -47,10 +50,12 @@ export class WorkerService {
         );
       }
     }
-
-    console.log(incomingMessage);
-    console.info(this.campaignLoaderService.getCampaignDefinition('user_profile_creation'));
-    await Promise.resolve(1);
+    const user: IUser = (await this.userRepository.getUser(incomingMessage.phoneNumber)) as IUser;
+    await this.#campaignRunner(
+      incomingMessage,
+      user.conversationState as ConversationState,
+      user.campaignContext as ICampaignContext,
+    );
   }
 
   async #setUserProfileCreationFlow(phoneNumber: string, messageSID: string) {
@@ -68,11 +73,49 @@ export class WorkerService {
       throw Error(errorMsg);
     }
 
+    await this.userProfileRepository.createUserProfile({
+      _id: phoneNumber,
+    });
+
     await this.userRepository.updateConversation(
       phoneNumber,
       ConversationState.IDLE, // IDLE to indicate bot has to act.
       userProfileFlow._id,
       userProfileFlow.steps[0].stepId,
     );
+  }
+
+  async #campaignRunner(
+    // campaignDefinition: ICampaignDefinition,
+    // campaignName: string,
+    msg: IIncomingMessage,
+    state: ConversationState,
+    context: ICampaignContext,
+    // repository: ICampaignSubmissionRepository,
+  ): Promise<void> {
+    if (state === ConversationState.IDLE) {
+      console.info(`Worker Service :: Running campaign ${context.flowId}`);
+      const outgoingMsg: IOutgoingMessage = {
+        forSid: msg.messageSid,
+        to: msg.phoneNumber,
+        from: this.appConfig.twilioNumber,
+        body: 'Hello from dispatcher',
+      };
+      console.debug(`Worker Service :: pushing message to outgoing queue`, outgoingMsg);
+      await this.sqsService.sendMessage(
+        this.appConfig.outgoingSqsQueueUrl,
+        JSON.stringify(outgoingMsg),
+        msg.phoneNumber,
+      );
+      console.debug(
+        `Worker Service :: Updating conversation context in User table for ${msg.phoneNumber}`,
+      );
+      await this.userRepository.updateConversation(
+        msg.phoneNumber,
+        ConversationState.IDLE,
+        context.flowId,
+        context.currentStepId,
+      );
+    }
   }
 }
