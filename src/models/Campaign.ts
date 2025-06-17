@@ -14,7 +14,7 @@ export interface IQuestionStep {
   prompt: string;
   expectedResponseType: ExpectedResponseType;
   fallbackMessage?: string;
-  validationRegex?: string;
+  validationRegex?: RegExp;
   nextStepId?: string;
   fieldName?: string;
   runFlow?: string;

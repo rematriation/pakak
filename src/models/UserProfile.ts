@@ -21,10 +21,10 @@ export interface IUserProfileDocument extends IUserProfile, Document {
 }
 
 // Regex for E.164 phone number format
-const E164_PHONE_REGEX = /^\+[1-9]\d{1,14}$/;
+const E164_PHONE_REGEX: RegExp = /^\+[1-9]\d{1,14}$/;
 
 // Regex for US Zip Code format: 5 digits or 5 digits + 4 digits (e.g., 12345 or 12345-6789)
-const US_ZIP_CODE_REGEX = /^\d{5}(?:-\d{4})?$/;
+const US_ZIP_CODE_REGEX: RegExp = /^\d{5}(?:-\d{4})?$/;
 
 const UserProfileSchema: Schema = new Schema(
   {

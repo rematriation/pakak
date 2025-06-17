@@ -18,11 +18,12 @@ import { Command } from '../constants/Command';
 import { IUserProfileDocument } from '../models/UserProfile';
 import { UserProfileRepository } from '../repositories/UserProfileRepository';
 import { CampaignId } from '../constants/CampaignId';
-import { ICampaignDefinition } from '../models/Campaign';
+import { ICampaignDefinition, IQuestionStep } from '../models/Campaign';
 import { ConversationState } from '../constants/ConversationState';
 import { IUser } from '../models/User';
 import { ICampaignContext } from '../models/CampaignContext';
 import { IOutgoingMessage } from '../models/OutgoingMessage';
+import { ICampaignSubmissionRepository } from '../repositories/CampaignEntryRepository';
 
 @injectable()
 export class WorkerService {
@@ -55,6 +56,7 @@ export class WorkerService {
       incomingMessage,
       user.conversationState as ConversationState,
       user.campaignContext as ICampaignContext,
+      this.userProfileRepository,
     );
   }
 
@@ -91,15 +93,20 @@ export class WorkerService {
     msg: IIncomingMessage,
     state: ConversationState,
     context: ICampaignContext,
-    // repository: ICampaignSubmissionRepository,
+    repository: ICampaignSubmissionRepository,
   ): Promise<void> {
+    const questionStep: IQuestionStep = await this.campaignLoaderService.getQuestionStep(
+      context.flowId,
+      context.currentStepId,
+    );
+
     if (state === ConversationState.IDLE) {
       console.info(`Worker Service :: Running campaign ${context.flowId}`);
       const outgoingMsg: IOutgoingMessage = {
-        forSid: msg.messageSid,
+        replyForMsgSid: msg.messageSid,
         to: msg.phoneNumber,
         from: this.appConfig.twilioNumber,
-        body: 'Hello from dispatcher',
+        body: questionStep.prompt,
       };
       console.debug(`Worker Service :: pushing message to outgoing queue`, outgoingMsg);
       await this.sqsService.sendMessage(
@@ -112,10 +119,48 @@ export class WorkerService {
       );
       await this.userRepository.updateConversation(
         msg.phoneNumber,
-        ConversationState.IDLE,
+        ConversationState.AWAITING_REPLY,
         context.flowId,
         context.currentStepId,
       );
+    } else {
+      if (state == ConversationState.AWAITING_REPLY) {
+        if (new RegExp(questionStep.validationRegex || '').test(msg.messageText || '')) {
+          await repository.addResponse(
+            msg.phoneNumber,
+            questionStep.fieldName as string,
+            msg.messageText as string,
+          );
+          const nextStepId: string | undefined = questionStep.nextStepId;
+          let nextQuestionStep: IQuestionStep | undefined;
+          if (nextStepId) {
+            nextQuestionStep = await this.campaignLoaderService.getQuestionStep(
+              context.flowId,
+              nextStepId,
+            );
+          }
+          const outgoingMsg: IOutgoingMessage = {
+            replyForMsgSid: msg.messageSid,
+            to: msg.phoneNumber,
+            from: this.appConfig.twilioNumber,
+            body: `Thank you! ${nextQuestionStep?.prompt}`,
+          };
+          await this.sqsService.sendMessage(
+            this.appConfig.outgoingSqsQueueUrl,
+            JSON.stringify(outgoingMsg),
+            msg.phoneNumber,
+          );
+          console.debug(
+            `Worker Service :: Updating conversation context in User table for ${msg.phoneNumber}`,
+          );
+          await this.userRepository.updateConversation(
+            msg.phoneNumber,
+            ConversationState.AWAITING_REPLY,
+            context.flowId,
+            nextStepId || 'NONE',
+          );
+        }
+      }
     }
   }
 }

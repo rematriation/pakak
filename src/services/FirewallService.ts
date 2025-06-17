@@ -57,7 +57,7 @@ export class FirewallService {
     if (cmd === Command.START) {
       return this.#subscribeUser(phoneNumber, user.subscriptionStatus);
     }
-    return twilioResponse(TWI_ML_RESPONSE.THANK_YOU);
+    return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
   }
 
   async #handleUserAwaitingDeletion(phoneNumber: string): Promise<APIGatewayProxyResult> {

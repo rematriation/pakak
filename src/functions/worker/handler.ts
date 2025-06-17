@@ -63,7 +63,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
             err,
           );
           const outgoingMessage: IOutgoingMessage = {
-            forSid: incommingMessage.messageSid,
+            replyForMsgSid: incommingMessage.messageSid,
             to: incommingMessage.phoneNumber,
             from: appConfig.twilioNumber,
             body: TWI_ML_RESPONSE.GENERIC_ERROR,

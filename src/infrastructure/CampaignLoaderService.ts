@@ -13,8 +13,8 @@ import campaignsJson from '../../campaigns/campaigns.json';
  */
 export interface ICampaignLoaderService {
   initializeCampaigns(): Promise<void>;
-  getCampaignDefinition(campaignId: string): Promise<ICampaignDefinition | null>;
-  getQuestionStep(campaignId: string, stepId: string): IQuestionStep | undefined;
+  getCampaignDefinition(campaignId: string): Promise<ICampaignDefinition>;
+  getQuestionStep(campaignId: string, stepId: string): Promise<IQuestionStep>;
 }
 
 /**
@@ -84,18 +84,30 @@ export class CampaignLoaderService implements ICampaignLoaderService {
     console.info(
       `CampaignLoaderService :: Total ${this.#cachedCampaignDefinitions.size} active campaigns loaded from JSON file.`,
     );
+
+    console.debug('cachedCampaignDefinitions: ', this.#cachedCampaignDefinitions);
+    console.debug('cachedCampaignStepsById', this.#cachedCampaignStepsById);
   }
 
   /**
    * Retrieves a specific campaign definition by its ID from memory (or DB on cold start).
    * @param campaignId The ID of the campaign to retrieve.
-   * @returns The Campaign definition, or null if not found/active.
+   * @returns The Campaign definition.
+   * @throws Error if campaignId doesn't exist.
    */
-  public async getCampaignDefinition(campaignId: string): Promise<ICampaignDefinition | null> {
+  public async getCampaignDefinition(campaignId: string): Promise<ICampaignDefinition> {
     if (!this.#cachedCampaignDefinitions) {
       await this.initializeCampaigns();
     }
-    return this.#cachedCampaignDefinitions?.get(campaignId) || null;
+
+    const campaign: ICampaignDefinition | undefined =
+      this.#cachedCampaignDefinitions?.get(campaignId);
+    if (!campaign) {
+      throw new Error(
+        `CampaignLoaderService :: Incorrect campaign configuration or invalid conversation state :: Campaign ${campaignId} doesn't exist.`,
+      );
+    }
+    return campaign;
   }
 
   /**
@@ -103,15 +115,21 @@ export class CampaignLoaderService implements ICampaignLoaderService {
    * Uses an in-memory map for fast lookup.
    * @param campaignId The ID of the campaign the step belongs to.
    * @param stepId The ID of the question step to retrieve.
-   * @returns The question step, or undefined if not found.
+   * @returns The question step
+   * @throws Error if camapaignId with stepId doesn't exist.
    */
-  public getQuestionStep(campaignId: string, stepId: string): IQuestionStep | undefined {
+  public async getQuestionStep(campaignId: string, stepId: string): Promise<IQuestionStep> {
     if (!this.#cachedCampaignStepsById) {
-      console.warn(
-        'CampaignLoaderService :: getQuestionStep called before campaigns were initialized. Attempting initialization.',
-      );
-      return undefined;
+      await this.initializeCampaigns();
     }
-    return this.#cachedCampaignStepsById.get(campaignId)?.get(stepId);
+    const questionStep: IQuestionStep | undefined = this.#cachedCampaignStepsById
+      ?.get(campaignId)
+      ?.get(stepId);
+    if (!questionStep) {
+      throw new Error(
+        `CampaignLoaderService :: Incorrect campaign configuration or invalid conversation state :: Campaign: ${campaignId} with Question Step: ${stepId} doesn't exist`,
+      );
+    }
+    return questionStep;
   }
 }
