@@ -36,8 +36,9 @@
       },
       {
         "stepId": "complete_profile_flow",
-        "prompt": "Great! Your profile is now updated. Thank you!",
-        "expectedResponseType": "NONE"
+        "prompt": "Great! Your profile is now updated.",
+        "expectedResponseType": "NONE",
+        "runFlow": "image_archive_campaign"
       }
     ],
     "isActive": true,
@@ -46,6 +47,144 @@
     },
     "updatedAt": {
       "$date": "2025-06-13T10:00:00.000Z"
+    }
+  },
+  {
+    "_id": "image_archive_campaign",
+    "name": "Image Archive Campaign",
+    "description": "This campaign prompts users who submit a picture to provide the time and location for archiving purposes. ",
+    "initialMessage": "Thanks for submitting a picture for the archive! To help us catalog it, we have a couple of questions.",
+    "fallbackMessage": "I'm sorry, I didn't understand that. Please provide a valid answer for the current question.",
+    "timeoutMessage": "It seems you're busy. The archiving session has ended. You can start a new one anytime by sending another picture.",
+    "steps": [
+      {
+        "stepId": "ask_for_picture",
+        "prompt": "Go Pakak! Find the picture you want to submit, take a picture and send it to us.",
+        "expectedResponseType": "IMAGE",
+        "validationRegex": "^image\/(jpeg|jpg|gif|png|heic|heif|tiff|bmp)$",
+        "nextStepId": "ask_time",
+        "fieldName": "image_url",
+        "fallbackMessage": "That doesn't look like a picture. Go Pakak! Find the picture you want to submit, take a picture and send it to us."
+      },
+      {
+        "stepId": "ask_knows_time",
+        "prompt": "Do you know about WHEN this picture was taken? Reply YES or NO. Msg & data rates may apply. Reply STOP to opt-out.",
+        "expectedResponseType": "CHOICE",
+        "routingRules": [
+          {
+            "conditionRegex": "^\\s*[Yy]([Ee][Ss])?[.]*\\s*$",
+            "nextStepId": "ask_time"
+          },
+          {
+            "conditionRegex": "^\\s*[Nn]([Oo][.])?\\s*$",
+            "nextStepId": "ask_location"
+          }
+        ],
+        "fallbackMessage": "I'm sorry, I didn't understand that. Please reply with either 'yes' or 'no'."
+      },
+      {
+        "stepId": "ask_time",
+        "prompt": "About what year or decade was the original picture taken? Reply with 4 numbers like '1990' or '2002'. If you're not sure, ask an adult. Msg & data rates may apply. Reply STOP to opt-out.",
+        "expectedResponseType": "TEXT",
+        "validationRegex": "^\\s*([12]\\d{3})\\.?\\s*$",
+        "nextStepId": "ask_location",
+        "fieldName": "picture_time",
+        "fallbackMessage": "Oops! Be sure to give us all four digits of the decade, such as \"2020\""
+      },
+      {
+        "stepId": "ask_knows_location",
+        "prompt": "Do you know WHERE this picture was taken? Reply YES or NO. Msg & data rates may apply. Reply STOP to opt-out.",
+        "expectedResponseType": "CHOICE",
+        "routingRules": [
+          {
+            "conditionRegex": "^\\s*[Yy]([Ee][Ss])?[.]*\\s*$",
+            "nextStepId": "ask_location"
+          },
+          {
+            "conditionRegex": "^\\s*[Nn]([Oo][.])?\\s*$",
+            "nextStepId": "ask_value"
+          }
+        ],
+        "fallbackMessage": "I'm sorry, I didn't understand that. Please reply with either 'yes' or 'no'."
+      },
+      {
+        "stepId": "ask_location",
+        "prompt": "Reply with the name of the location, such as village, landmark, camp, or other name. For example, \"Elephant Point\" or \"Noatak\" or \"Kobuk River\". Msg & data rates may apply. Reply STOP to opt-out.",
+        "expectedResponseType": "TEXT",
+        "validationRegex": "^[\\w\\s-,'.&#()]+$",
+        "nextStepId": "confirm_location_in_alaska",
+        "fieldName": "picture_location",
+        "fallbackMessage": "I'm sorry, that doesn't look like a valid location. Please reply with the name of the location, such as a village, landmark, or river."
+      },
+      {
+        "stepId": "confirm_location_in_alaska",
+        "prompt": "Is this location in Alaska? Reply STOP to opt-out.",
+        "expectedResponseType": "CHOICE",
+        "routingRules": [
+          {
+            "conditionRegex": "^\\s*[Yy]([Ee][Ss])?[.]*\\s*$",
+            "nextStepId": "ask_value",
+            "setFields": {
+              "picture_state_or_country": "Alaska"
+            }
+          },
+          {
+            "conditionRegex": "^\\s*[Nn]([Oo][.])?\\s*$",
+            "nextStepId": "ask_state_or_country"
+          }
+        ],
+        "fallbackMessage": "I'm sorry, I didn't understand that. Please reply with either 'yes' or 'no'."
+      },
+      {
+        "stepId": "ask_state_or_country",
+        "prompt": "Not Alaska, gachya. What state or other country?",
+        "expectedResponseType": "TEXT",
+        "validationRegex": "^\\s*[A-Za-z\\s.-]+\\s*$",
+        "nextStepId": "ask_value",
+        "fieldName": "picture_state_or_country",
+        "fallbackMessage": "I'm sorry, I didn't recognize that. Please reply with the name of the state or country, like 'California' or 'Canada'."
+      },
+      {
+        "stepId": "ask_value",
+        "prompt": "Last question. What Iñupiat Iḷitqusiat best describes this picture for you? Reply with the number for your choice:\n\n**RESPECT**\n1. Respect for Elders\n2. Respect for Nature\n3. Respect for Others\n\n**GLOBAL**\n4. Cooperation\n5. Sharing\n6. Avoid Conflict\n\n**PERSONAL**\n7. Humility\n8. Humor\n9. Hard Work\n10. Spirtuality\n\n**TRIBAL**\n11. Responsibility to Tribe\n12. Love for Children\n13. Domestic Skills\n14. Family Roles\n\n**KNOWLEDGE**\n15. Knowledge of Language\n16. Knowledge of Family Tree\n17. Hunter Success",
+        "expectedResponseType": "NUMBER_MAPPING",
+        "mapping": {
+          "1": "Respect for Elders",
+          "2": "Respect for Nature",
+          "3": "Respect for Others",
+          "4": "Cooperation",
+          "5": "Sharing",
+          "6": "Avoid Conflict",
+          "7": "Humility",
+          "8": "Humor",
+          "9": "Hard Work",
+          "10": "Spirituality",
+          "11": "Responsibility to Tribe",
+          "12": "Love for Children",
+          "13": "Domestic Skills",
+          "14": "Family Roles",
+          "15": "Knowledge of Language",
+          "16": "Knowledge of Family Tree",
+          "17": "Hunter Success"
+        },
+        "validationRegex": "^\\s*([1-9]|1[0-7])\\s*$",
+        "nextStepId": "complete_archive_flow",
+        "fieldName": "inupiat_value",
+        "fallbackMessage": "That's not a valid choice. Please reply with a number from 1 to 17 from the list below:\n\n**RESPECT**\n1. Respect for Elders\n2. Respect for Nature\n3. Respect for Others\n\n**GLOBAL**\n4. Cooperation\n5. Sharing\n6. Avoid Conflict\n\n**PERSONAL**\n7. Humility\n8. Humor\n9. Hard Work\n10. Spirtuality\n\n**TRIBAL**\n11. Responsibility to Tribe\n12. Love for Children\n13. Domestic Skills\n14. Family Roles\n\n**KNOWLEDGE**\n15. Knowledge of Language\n16. Knowledge of Family Tree\n17. Hunter Success"
+      },
+      {
+        "stepId": "complete_archive_flow",
+        "prompt": "Great! Thank you for adding your picture to the archive.",
+        "expectedResponseType": "NONE",
+        "nextStepId": "ask_for_picture"
+      }
+    ],
+    "isActive": true,
+    "createdAt": {
+      "$date": "2025-06-18T19:15:16.000Z"
+    },
+    "updatedAt": {
+      "$date": "2025-06-18T19:15:16.000Z"
     }
   }
 ]
