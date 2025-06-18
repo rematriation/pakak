@@ -1,5 +1,7 @@
 import { ValueType } from 'dynamoose/dist/Schema';
-import dynamoose from '../libs/dynamoose';
+import dynamoose from '../infrastructure/dynamoose';
+import { ConversationState } from '../constants/ConversationState';
+import { ICampaignContext } from './CampaignContext';
 
 /**
  * IUser describes the attribute shape in DynamoDB.
@@ -19,6 +21,8 @@ export interface IUser {
   rateLimitCounter?: number | null;
   rateLimitWindowExpiresAt?: string;
   awaitingDeletion: number;
+  conversationState?: ConversationState;
+  campaignContext?: ICampaignContext;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -69,6 +73,26 @@ const userSchema = new dynamoose.Schema(
         if (typeof v !== 'number') return false;
         return v === 0 || v === 1;
       },
+    },
+    conversationState: {
+      type: String,
+      enum: Object.values(ConversationState),
+      required: false,
+      default: ConversationState.AWAITING_IMAGE_UPLOAD,
+    },
+    campaignContext: {
+      type: Object,
+      schema: {
+        flowId: {
+          type: String,
+          default: 'NONE',
+        },
+        currentStepId: {
+          type: String,
+          default: 'NONE',
+        },
+      },
+      default: {},
     },
   },
   {

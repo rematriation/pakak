@@ -19,9 +19,9 @@ export function extractCommandKeyword(msg: string): Command | null {
   }
 
   const normalizedMsg = msg.toUpperCase().trim();
-  for (const command of Object.values(Command)) {
-    if (normalizedMsg === command.toString()) {
-      return command;
+  for (const [command, value] of Object.entries(Command)) {
+    if (normalizedMsg === command) {
+      return value;
     }
   }
 

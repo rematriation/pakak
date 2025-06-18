@@ -1,8 +1,9 @@
 import { IUser, UserModel } from '../models/User';
 import { Condition } from 'dynamoose/dist/Condition';
 import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
-import { checkErrorisConditionalCheckFailedException } from '../libs/dynamoose';
+import { checkErrorisConditionalCheckFailedException } from '../infrastructure/dynamoose';
 import { injectable } from 'tsyringe';
+import { ConversationState } from '../constants/ConversationState';
 
 @injectable()
 export class UserRepository {
@@ -99,5 +100,56 @@ export class UserRepository {
         error,
       );
     }
+  }
+
+  /**
+   * Updates a user's conversation state and campaign context data in a single atomic operation.
+   *
+   * @param phone The user's phone number.
+   * @param conversationState The new state of the conversation.
+   * @param flowId The current flow ID.
+   * @param currentStepId The current step ID within the flow.
+   */
+  async updateConversation(
+    phone: string,
+    conversationState: ConversationState,
+    flowId: string,
+    currentStepId: string,
+  ): Promise<void> {
+    const updatesLog = { conversationState, campaignContext: { flowId, currentStepId } };
+    try {
+      await UserModel.update(
+        { phone },
+        {
+          conversationState: conversationState,
+          campaignContext: {
+            flowId: flowId,
+            currentStepId: currentStepId,
+          },
+        },
+      );
+      console.debug(
+        `UserRepository.updateConversation :: Updated conversation context for ${phone} with ${JSON.stringify(updatesLog)}`,
+      );
+    } catch (error) {
+      console.error(
+        `UserRepository.updateConversation :: Error updating conversation context for ${phone}:`,
+        error,
+        ` :: updates:  `,
+        updatesLog,
+      );
+      throw error;
+    }
+  }
+
+  async clearConversationState(phone: string): Promise<void> {
+    console.debug(`UserRepository :: Clear conversation state for ${phone}`);
+    await UserModel.update(
+      { phone },
+      {
+        conversationState: null,
+        conversationContextData: null,
+      },
+    );
   }
 }

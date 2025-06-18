@@ -13,13 +13,15 @@ import {
   validatePhoneNumber,
 } from '../../libs/requestValidator';
 import { twilioResponse } from '../../libs/responseHelpers';
-import { SQSService, ISQSServiceToken } from '../../libs/SQSService';
+import { SQSService, ISQSServiceToken } from '../../infrastructure/SQSService';
 import { AppConfig, IAppConfigToken } from '../../configs/AppConfig';
+import { IIncomingMessage } from '../../models/IncomingMessage';
 
 container.register(IAppConfigToken, { useClass: AppConfig });
 const userRepository: UserRepository = container.resolve(UserRepository);
 container.register(ISQSServiceToken, { useClass: SQSService });
-const firewallService = container.resolve(FirewallService);
+
+const firewallService: FirewallService = container.resolve(FirewallService);
 
 const TTL_FOR_PROCESSING_LOCK = 60;
 
@@ -39,7 +41,7 @@ export const handler: APIGatewayProxyHandler = async (
 };
 
 async function handleGet(): Promise<APIGatewayProxyResult> {
-  console.debug(`Handler :: GET call received.`);
+  console.debug(`Firewall Handler :: GET call received.`);
   return Promise.resolve({
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
@@ -53,10 +55,12 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
   let errorRaised: boolean = false;
   let delegatedToService: boolean = false;
   try {
-    const twilioParsedParams = parseAndValidatePostBody(event);
-    phoneNumber = validatePhoneNumber(twilioParsedParams);
+    const incomingMessage: IIncomingMessage = parseAndValidatePostBody(event);
+    phoneNumber = incomingMessage.phoneNumber;
+    validatePhoneNumber(phoneNumber);
 
     const user: IUser | null = await userRepository.getUser(phoneNumber);
+    console.log('User :: ', user);
 
     if (!user) {
       return createNewUser(phoneNumber);
@@ -64,7 +68,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
 
     lockAcquired = await userRepository.acquireProcessingLock(phoneNumber, TTL_FOR_PROCESSING_LOCK);
     if (!lockAcquired) {
-      console.info(`Handler :: Concurrent request for ${phoneNumber}. Lock already held.`);
+      console.info(`Firewall Handler :: Concurrent request for ${phoneNumber}. Lock already held.`);
       return Promise.resolve({
         statusCode: 200,
         headers: { 'Content-Type': 'text/xml' },
@@ -73,11 +77,14 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
     }
 
     delegatedToService = true;
-    return firewallService.processMessage(phoneNumber, user, twilioParsedParams);
+    return firewallService.processMessage(phoneNumber, user, incomingMessage);
   } catch (err: unknown) {
     errorRaised = true;
     if (err instanceof AppError) {
-      console.warn({ code: err.code, message: err.message }, 'Handler :: Application-level error.');
+      console.warn(
+        { code: err.code, message: err.message },
+        'Firewall Handler :: Application-level error.',
+      );
       return Promise.resolve({
         statusCode: 400,
         body: JSON.stringify({
@@ -88,7 +95,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
     } else if (err instanceof Error) {
       console.error(
         { errorName: err.name, errorMessage: err.message },
-        'Handler :: Standard Error caught.',
+        'Firewall Handler :: Standard Error caught.',
       );
       return Promise.resolve({
         statusCode: 500,
@@ -98,7 +105,7 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
         }),
       });
     } else {
-      console.error({ err }, 'Handler :: Unhandled non-Error type exception.');
+      console.error({ err }, 'Firewall Handler :: Unhandled non-Error type exception.');
       return Promise.resolve({
         statusCode: 500,
         body: JSON.stringify({
@@ -109,13 +116,13 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
     }
   } finally {
     if (phoneNumber && lockAcquired && (errorRaised || !delegatedToService)) {
-      void userRepository.releaseProcessingLock(phoneNumber);
+      await userRepository.releaseProcessingLock(phoneNumber);
     }
   }
 }
 
 async function createNewUser(phoneNumber: string): Promise<APIGatewayProxyResult> {
-  console.info(`Handler :: User ${phoneNumber} does not exist. Attempting to create.`);
+  console.info(`Firewall Handler :: User ${phoneNumber} does not exist. Attempting to create.`);
   void userRepository.createUser({
     phone: phoneNumber,
     subscriptionStatus: false,
