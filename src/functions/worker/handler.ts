@@ -51,36 +51,35 @@ export const handler = async (event: SQSEvent): Promise<void> => {
     let incommingMessage: IIncomingMessage;
     try {
       incommingMessage = JSON.parse(record.body) as IIncomingMessage;
+      let outgoingMsg: IOutgoingMessage;
       try {
         console.info(
           `Worker Handler :: Processing message for: ${incommingMessage.phoneNumber}, SID: ${incommingMessage.messageSid}`,
         );
-        await workerService.processMessage(incommingMessage);
+        outgoingMsg = await workerService.processMessage(incommingMessage);
       } catch (err: unknown) {
         if (err instanceof AppError) {
           console.warn(
             `Worker Handler :: Couldn't process the message: ${record.body} :: error: `,
             err,
           );
-          const outgoingMessage: IOutgoingMessage = {
-            replyForMsgSid: incommingMessage.messageSid,
-            to: incommingMessage.phoneNumber,
-            from: appConfig.twilioNumber,
-            body: TWI_ML_RESPONSE.GENERIC_ERROR,
-          };
-          console.info(
-            `Worker Handler :: Pushing generic error message to outgoing queue :: msg: `,
-            outgoingMessage,
-          );
-          await sqsService.sendMessage(
-            appConfig.outgoingSqsQueueUrl,
-            JSON.stringify(outgoingMessage),
-            outgoingMessage.to,
-          );
         } else {
           // unknown error. rethrow to let outer catch handle.
           throw err;
         }
+      } finally {
+        outgoingMsg = {
+          replyForMsgSid: incommingMessage.messageSid,
+          to: incommingMessage.phoneNumber,
+          from: appConfig.twilioNumber,
+          body: TWI_ML_RESPONSE.GENERIC_ERROR,
+        };
+        console.info(`Worker Handler :: Pushing reply to outgoing queue :: msg: `, outgoingMsg);
+        await sqsService.sendMessage(
+          appConfig.outgoingSqsQueueUrl,
+          JSON.stringify(outgoingMsg),
+          outgoingMsg.to,
+        );
       }
     } catch (err: unknown) {
       console.error(

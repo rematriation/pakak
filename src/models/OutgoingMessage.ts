@@ -15,5 +15,5 @@ export interface IOutgoingMessage {
   readonly from: string;
   readonly body?: string;
   readonly mediaUrl?: string[];
-  readonly statusCallback?: string;
+  statusCallback?: string;
 }

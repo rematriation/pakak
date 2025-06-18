@@ -5,6 +5,8 @@
  */
 
 import { IOutgoingMessage } from '../../models/OutgoingMessage';
+import { AppError } from '../errors/AppError';
+import { ErrorCode } from '../errors/ErrorCode';
 
 /**
  * Builder class for constructing IOutgoingMessage.
@@ -66,7 +68,10 @@ export class OutgoingMessageBuilder {
    */
   build(): IOutgoingMessage {
     if (!this.#body && (!this.#mediaUrl || this.#mediaUrl.length === 0)) {
-      throw new Error('Outgoing message must have either a body or at least one media URL.');
+      throw new AppError(
+        ErrorCode.OUTGOING_MESSAGE_EMPTY_CONTENT,
+        'Outgoing message must have either a body or at least one media URL.',
+      );
     }
 
     return {
