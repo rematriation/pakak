@@ -113,16 +113,21 @@ export class UserRepository {
   async updateConversation(
     phone: string,
     conversationState: ConversationState,
+    submissionId: string,
     flowId: string,
     currentStepId: string,
   ): Promise<void> {
-    const updatesLog = { conversationState, campaignContext: { flowId, currentStepId } };
+    const updatesLog = {
+      conversationState,
+      campaignContext: { submissionId, flowId, currentStepId },
+    };
     try {
       await UserModel.update(
         { phone },
         {
           conversationState: conversationState,
           campaignContext: {
+            submissionId: submissionId,
             flowId: flowId,
             currentStepId: currentStepId,
           },

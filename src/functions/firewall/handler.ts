@@ -6,7 +6,7 @@ import { APIGatewayProxyHandler, APIGatewayProxyResult, APIGatewayProxyEvent } f
 import { AppError } from '../../libs/errors/AppError';
 import { ErrorCode } from '../../libs/errors/ErrorCode';
 import { IUser } from '../../models/User';
-import { TWI_ML_RESPONSE } from '../../constants/TwiMLResponse';
+import { TWI_ML_RESPONSE } from '../../constants/StaticResponses';
 import {
   validateHttpMethod,
   parseAndValidatePostBody,

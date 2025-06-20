@@ -11,7 +11,7 @@ import { MONGO_ERROR_CODES } from '../libs/errors/MongoErrorCodes';
 import { ErrorCode } from '../libs/errors/ErrorCode';
 import { AppError } from '../libs/errors/AppError';
 import mongoose from 'mongoose';
-import { ICampaignSubmissionRepository } from './CampaignEntryRepository';
+import { ICampaignSubmissionRepository } from './ICampaignSubmissionRepository';
 
 /**
  * Repository for managing UserProfile data in MongoDB Atlas using Mongoose.
@@ -203,10 +203,18 @@ export class UserProfileRepository implements ICampaignSubmissionRepository {
     updateObject: mongoose.UpdateQuery<IUserProfileDocument>,
   ): Promise<IUserProfileDocument | null> {
     try {
-      const updatedProfile = await UserProfileModel.findByIdAndUpdate(phoneNumber, updateObject, {
-        new: true,
-        runValidators: true,
-      }).exec();
+      const updatedProfile: IUserProfileDocument | null = await UserProfileModel.findByIdAndUpdate(
+        phoneNumber,
+        updateObject,
+        {
+          new: true,
+          runValidators: true,
+        },
+      ).exec();
+      if (!updatedProfile) {
+        console.error(`UserProfileRepository :: User Profile for  ${phoneNumber} not found.`);
+        throw new Error(`User profile with ${phoneNumber} not found.`);
+      }
       return updatedProfile;
     } catch (error) {
       console.error(
@@ -215,14 +223,6 @@ export class UserProfileRepository implements ICampaignSubmissionRepository {
       );
       throw error;
     }
-  }
-
-  // eslint-disable-next-line @typescript-eslint/require-await
-  public async createSubmission(campaignId: string, phoneNumber: string): Promise<void> {
-    console.error(
-      `UserProfileRepository :: createSubmission method is not implemented since it's user profile is not really a campaign submission ${campaignId}, ${phoneNumber}`,
-    );
-    throw new Error('createSubmission is not implemented in UserProfileRepository.');
   }
 
   /**
@@ -234,7 +234,11 @@ export class UserProfileRepository implements ICampaignSubmissionRepository {
    * @returns A Promise that resolves when the response is added.
    * @throws Error if the user profile is not found or update fails.
    */
-  public async addResponse(submissionId: string, fieldName: string, value: string): Promise<void> {
+  public async addTextResponse(
+    submissionId: string,
+    fieldName: string,
+    value: string,
+  ): Promise<void> {
     const phoneNumber = submissionId;
     try {
       await this.#updateProfileField(phoneNumber, { [fieldName]: String(value) });

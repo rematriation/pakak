@@ -62,3 +62,8 @@ export const TWI_ML_RESPONSE = {
     '<Response><Message>You have requested data deletion and have been unsubscribed. Please try to resubscribe again tomorrow.</Message></Response>',
   ),
 };
+
+export const RESPONSE = {
+  GENERIC_FALLBACK_MESSAGE: "I'm sorry, I didn't understand that.",
+  GENERIC_ACK: 'Thank you!',
+};

@@ -5,7 +5,7 @@ import { twilioResponse } from '../libs/responseHelpers';
 import { APIGatewayProxyResult } from 'aws-lambda';
 import { extractCommandKeyword, sanitizeTxtMessage } from '../libs/messageHelper';
 import { Command } from '../constants/Command';
-import { TWI_ML_RESPONSE } from '../constants/TwiMLResponse';
+import { TWI_ML_RESPONSE } from '../constants/StaticResponses';
 import { ISQSService, ISQSServiceToken } from '../infrastructure/SQSService';
 import { IAppConfig, IAppConfigToken } from '../configs/AppConfig';
 import { IIncomingMessage } from '../models/IncomingMessage';

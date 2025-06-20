@@ -9,7 +9,7 @@ import { container } from 'tsyringe';
 import { UserRepository } from '../../repositories/UserRepository';
 import { SQSEvent } from 'aws-lambda';
 import { AppError } from '../../libs/errors/AppError';
-import { TWI_ML_RESPONSE } from '../../constants/TwiMLResponse';
+import { TWI_ML_RESPONSE } from '../../constants/StaticResponses';
 import { SQSService, ISQSServiceToken, ISQSService } from '../../infrastructure/SQSService';
 import { AppConfig, IAppConfigToken } from '../../configs/AppConfig';
 import { IIncomingMessage } from '../../models/IncomingMessage';
