@@ -10,6 +10,6 @@
 export enum ExpectedResponseType {
   TEXT = 'TEXT',
   NUMBER = 'NUMBER',
-  YES_NO = 'YES_NO',
   IMAGE = 'IMAGE',
+  CHOICE = 'CHOICE',
 }

@@ -9,7 +9,7 @@ export interface IQuestionStep {
   prompt: string;
   expectedResponseType: ExpectedResponseType;
   fallbackMessage?: string;
-  validationRegex?: RegExp;
+  validationRegex?: string;
   nextStepId?: string;
   fieldName?: string;
   runFlow?: string;

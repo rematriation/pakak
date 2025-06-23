@@ -1,4 +1,5 @@
 import { Schema } from 'mongoose';
+import { VirusScanResult } from '../constants/VirusScanResult';
 
 /**
  * Interface describing the structure of the embedded media object.
@@ -7,13 +8,14 @@ import { Schema } from 'mongoose';
 export interface IMedia {
   bucket: string;
   key: string;
+  url: string;
   mime_type: string;
   size_kb: number;
   sha256?: string;
   virus_scan?: {
     checkedAt: Date;
     engine: string;
-    result: string;
+    result: VirusScanResult;
   };
 }
 /**
@@ -44,7 +46,7 @@ export const MediaSchema: Schema = new Schema(
     virus_scan: {
       checkedAt: { type: Date },
       engine: { type: String },
-      result: { type: String },
+      result: { type: String, enum: Object.values(VirusScanResult) },
     },
   },
   { _id: false },

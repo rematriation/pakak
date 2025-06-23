@@ -34,6 +34,10 @@ provider:
     STATIC_ASSETS_BASE_URL: !Sub 'https://${StaticAssetsBucket}.s3.${self:provider.region}.amazonaws.com'
     INUPIAT_VALUES_IMAGE_NAME: 'Inupiat_Ilitqusiat_Values.jpg'
 
+    RAW_BUCKET_NAME: pakak-${self:provider.stage}-raw
+    CLEAN_BUCKET_NAME: pakak-${self:provider.stage}-clean
+    QUARANTINE_BUCKET_NAME: pakak-${self:provider.stage}-quarantine
+
   iam:
     role:
       statements:

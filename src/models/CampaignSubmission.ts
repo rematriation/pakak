@@ -18,14 +18,13 @@ export interface ICampaignSubmission {
   campaign: ICampaignDocument['_id'];
   status: SubmissionStatus;
   submission_data?: Record<string, string>;
-  media_data?: Map<string, IMedia>;
+  media_data?: IMedia;
 }
 
 export interface ICampaignSubmissionDocument extends ICampaignSubmission, Document {}
 
 const CampaignSubmissionSchema: Schema = new Schema(
   {
-    phone: { type: String, required: true, index: true },
     campaign: { type: String, required: true, index: true },
     status: {
       type: String,
@@ -35,9 +34,8 @@ const CampaignSubmissionSchema: Schema = new Schema(
     },
     submission_data: { type: Map, of: Schema.Types.Mixed, default: {} },
     media_data: {
-      type: Map,
-      of: MediaSchema,
-      default: {},
+      type: MediaSchema,
+      required: false,
     },
   },
   {

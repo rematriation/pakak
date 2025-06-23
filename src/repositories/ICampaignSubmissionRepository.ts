@@ -4,7 +4,7 @@
  * @desc Campaign Repository interface.
  */
 
-import { ICampaignSubmission } from '../models/CampaignSubmission';
+import { ICampaignSubmissionDocument } from '../models/CampaignSubmission';
 import { IMedia } from '../models/Media';
 
 /**
@@ -19,7 +19,7 @@ export interface ICampaignSubmissionRepository {
    * @param phoneNumber The user's phone number.
    * @returns A Promise that resolves when the submission is created.
    */
-  createSubmission?(campaignId: string, phoneNumber: string): Promise<ICampaignSubmission>;
+  createSubmission?(campaignId: string, phoneNumber: string): Promise<ICampaignSubmissionDocument>;
 
   /**
    * Adds or updates a specific response field within an existing campaign submission.
@@ -38,12 +38,4 @@ export interface ICampaignSubmissionRepository {
    * @returns A Promise that resolves when the media data is added.
    */
   addOrUpdateMediaToSubmission?(submissionId: string, media: IMedia): Promise<void>;
-
-  /**
-   * Adds or updates multiple media items to an existing campaign submission.
-   * @param submissionId The ID of the submission record.
-   * @param mediaItems An array of IMedia objects to add or update.
-   * @returns A Promise that resolves when all media items are added or updated.
-   */
-  addOrUpdateMultipleMediaToSubmission?(submissionId: string, mediaItems: IMedia[]): Promise<void>;
 }

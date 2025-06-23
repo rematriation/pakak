@@ -83,6 +83,10 @@ const userSchema = new dynamoose.Schema(
     campaignContext: {
       type: Object,
       schema: {
+        submissionId: {
+          type: String,
+          default: '',
+        },
         flowId: {
           type: String,
           default: 'NONE',

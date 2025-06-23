@@ -62,7 +62,7 @@
         "prompt": "Go Pakak! Find the picture you want to submit, take a picture and send it to us.",
         "expectedResponseType": "IMAGE",
         "validationRegex": "^image\/(jpeg|jpg|gif|png|heic|heif|tiff|bmp)$",
-        "nextStepId": "ask_time",
+        "nextStepId": "ask_knows_time",
         "fieldName": "image_url",
         "fallbackMessage": "That doesn't look like a picture. Go Pakak! Find the picture you want to submit, take a picture and send it to us."
       },

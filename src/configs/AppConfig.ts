@@ -29,6 +29,9 @@ export interface IAppConfig {
   inupiatValuesImgName: string;
   mongodbURI: string;
   mongodbDBName: string;
+  rawBucketName: string;
+  cleanBucketName: string;
+  quarantineBucketName: string;
 }
 
 /**
@@ -57,6 +60,9 @@ export class AppConfig implements IAppConfig {
   public readonly mongodbDBName: string;
   public readonly twilioAccountSid: string;
   public readonly twilioAuthToken: string;
+  public readonly rawBucketName: string;
+  public readonly cleanBucketName: string;
+  public readonly quarantineBucketName: string;
 
   constructor() {
     this.appStage = this.getRequiredEnv('APP_STAGE');
@@ -74,6 +80,9 @@ export class AppConfig implements IAppConfig {
     this.mongodbDBName = this.getRequiredEnv('MONGODB_DBNAME');
     this.twilioAccountSid = this.getRequiredEnv('TWILIO_ACCOUNT_SID');
     this.twilioAuthToken = this.getRequiredEnv('TWILIO_AUTH_TOKEN');
+    this.rawBucketName = this.getRequiredEnv('RAW_BUCKET_NAME');
+    this.cleanBucketName = this.getRequiredEnv('CLEAN_BUCKET_NAME');
+    this.quarantineBucketName = this.getRequiredEnv('QUARANTINE_BUCKET_NAME');
   }
 
   /**

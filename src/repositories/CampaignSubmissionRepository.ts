@@ -1,10 +1,6 @@
 import { injectable } from 'tsyringe';
 import { ICampaignSubmissionRepository } from './ICampaignSubmissionRepository';
-import {
-  CampaignSubmissionModel,
-  ICampaignSubmission,
-  ICampaignSubmissionDocument,
-} from '../models/CampaignSubmission';
+import { CampaignSubmissionModel, ICampaignSubmissionDocument } from '../models/CampaignSubmission';
 import { MongoServerError } from 'mongodb';
 import { MONGO_ERROR_CODES } from '../libs/errors/MongoErrorCodes';
 import { IMedia } from '../models/Media';
@@ -23,7 +19,7 @@ export class CampaignSubmissionRepository implements ICampaignSubmissionReposito
   public async createSubmission(
     campaignId: string,
     phoneNumber: string,
-  ): Promise<ICampaignSubmission> {
+  ): Promise<ICampaignSubmissionDocument> {
     try {
       const newSubmission: ICampaignSubmissionDocument = new CampaignSubmissionModel({
         user: phoneNumber,
@@ -92,8 +88,7 @@ export class CampaignSubmissionRepository implements ICampaignSubmissionReposito
 
   /**
    * Adds media data to an existing campaign submission.
-   * This updates the 'media_data' Map in the Submission document.
-   * The key in the map will be the 'key' property of the IMedia object (e.g., S3 object key).
+   * This updates the 'media' in the Submission document.
    *
    * @param submissionId The _id of the submission record.
    * @param media The IMedia object to add to the media_data Map.
@@ -101,12 +96,11 @@ export class CampaignSubmissionRepository implements ICampaignSubmissionReposito
    * @throws Error if the submission record is not found or update fails.
    */
   public async addOrUpdateMediaToSubmission(submissionId: string, media: IMedia): Promise<void> {
-    const mediaMapKey = media.key;
     try {
       const updateResult: ICampaignSubmissionDocument | null =
         await CampaignSubmissionModel.findByIdAndUpdate(
           submissionId,
-          { $set: { [`media_data.${mediaMapKey}`]: media } },
+          { $set: { [`media_data`]: media } },
           { new: true, runValidators: true, upsert: false },
         ).exec();
 
@@ -117,62 +111,11 @@ export class CampaignSubmissionRepository implements ICampaignSubmissionReposito
         throw new Error(`Campaign submission ${submissionId} not found.`);
       }
       console.log(
-        `CampaignSubmissionRepository :: Added media '${mediaMapKey}' to submission ${submissionId}.`,
+        `CampaignSubmissionRepository :: Added media '${media.key}' to submission ${submissionId}.`,
       );
     } catch (error) {
       console.error(
         `CampaignSubmissionRepository :: Error adding media to submission ${submissionId}:`,
-        error,
-      );
-      throw error;
-    }
-  }
-
-  /**
-   * Adds or updates multiple media items' metadata within an existing campaign submission.
-   * This updates/sets multiple keys within the 'media_data' Map.
-   *
-   * @param submissionId The ID of the submission record.
-   * @param mediaItems An array of IMedia objects to add or update. Each IMedia must have a unique 'key'.
-   * @returns A Promise that resolves when the media data is updated.
-   * @throws Error if the submission record is not found, a media item is missing a key, or update fails.
-   */
-  public async addOrUpdateMultipleMediaToSubmission(
-    submissionId: string,
-    mediaItems: IMedia[],
-  ): Promise<void> {
-    if (!mediaItems || mediaItems.length === 0) {
-      console.warn(
-        `CampaignSubmissionRepository :: No media items provided for submission ${submissionId}.`,
-      );
-      return;
-    }
-
-    const updateSet: Record<string, IMedia> = {};
-    for (const media of mediaItems) {
-      updateSet[`media_data.${media.key}`] = media;
-    }
-
-    try {
-      const updateResult: ICampaignSubmissionDocument | null =
-        await CampaignSubmissionModel.findByIdAndUpdate(
-          submissionId,
-          { $set: updateSet },
-          { new: true, runValidators: true, upsert: false },
-        ).exec();
-
-      if (!updateResult) {
-        console.error(
-          `CampaignSubmissionRepository :: Submission record ${submissionId} not found for adding multiple media.`,
-        );
-        throw new Error(`Campaign submission ${submissionId} not found.`);
-      }
-      console.log(
-        `CampaignSubmissionRepository :: Added/updated ${mediaItems.length} media items to submission ${submissionId}.`,
-      );
-    } catch (error) {
-      console.error(
-        `CampaignSubmissionRepository :: Error adding/updating multiple media for submission ${submissionId}:`,
         error,
       );
       throw error;

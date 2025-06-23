@@ -66,4 +66,8 @@ export const TWI_ML_RESPONSE = {
 export const RESPONSE = {
   GENERIC_FALLBACK_MESSAGE: "I'm sorry, I didn't understand that.",
   GENERIC_ACK: 'Thank you!',
+  IMAGE_SUBMISSION_SUCCESS:
+    "Thank you for submitting the picture! We're processing it and will let you know if there's an issue with it. In the meantime, please answer the following questions.",
+  GENERIC_USER_ERROR: 'An error occurred. Please send the message again.',
+  GENERIC_ERROR: 'An unexpected error occurred. Please wait.',
 };
