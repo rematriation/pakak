@@ -16,4 +16,5 @@ export interface IOutgoingMessage {
   readonly body?: string;
   readonly mediaUrl?: string[];
   statusCallback?: string;
+  readonly keepLockActive?: boolean;
 }

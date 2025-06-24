@@ -87,6 +87,8 @@ export class DispatcherService {
       );
       throw new Error(`Message delivery failed ${messageSid}, status: ${finalStatus}`);
     }
-    await this.userRepository.releaseProcessingLock(message.to);
+    if (!message.keepLockActive) {
+      await this.userRepository.releaseProcessingLock(message.to);
+    }
   }
 }

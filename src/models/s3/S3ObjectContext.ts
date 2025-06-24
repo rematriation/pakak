@@ -4,6 +4,7 @@
  * @desc Parent interface for common S3 object metadata and tags.
  */
 
+import { CampaignId } from '../../constants/CampaignId';
 import { ScanStatus } from '../../constants/ScanStatus';
 
 /**
@@ -12,7 +13,7 @@ import { ScanStatus } from '../../constants/ScanStatus';
 export interface IS3ObjectContext {
   submissionId: string;
   phoneNumber: string;
-  campaignId: string;
+  campaignId: CampaignId;
   msgSid: string;
   scanStatus?: ScanStatus;
 }
