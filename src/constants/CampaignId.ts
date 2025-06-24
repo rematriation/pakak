@@ -6,5 +6,5 @@
 
 export enum CampaignId {
   USER_PROFILE_ONBOARDING = 'user_profile_creation',
-  // IMAGE_SUBMISSION_FLOW = 'image_submission_flow_v1',
+  IMAGE_SUBMISSION_FLOW = 'image_archive_campaign',
 }

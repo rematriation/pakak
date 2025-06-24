@@ -5,7 +5,8 @@
  */
 
 import { injectable } from 'tsyringe';
-import { ICampaignDefinition, IQuestionStep } from '../models/Campaign';
+import { ICampaignDefinition } from '../models/CampaignDefinition';
+import { IQuestionStep } from '../models/QuestionStep';
 import campaignsJson from '../../campaigns/campaigns.json';
 
 /**

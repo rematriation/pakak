@@ -17,21 +17,35 @@ import { Command } from '../constants/Command';
 import { IUserProfileDocument } from '../models/UserProfile';
 import { UserProfileRepository } from '../repositories/UserProfileRepository';
 import { CampaignId } from '../constants/CampaignId';
-import { ICampaignDefinition, IQuestionStep } from '../models/Campaign';
+import { ICampaignDefinition } from '../models/CampaignDefinition';
 import { ConversationState } from '../constants/ConversationState';
 import { IUser } from '../models/User';
 import { ICampaignContext } from '../models/CampaignContext';
 import { IOutgoingMessage } from '../models/OutgoingMessage';
-import { ICampaignSubmissionRepository } from '../repositories/CampaignEntryRepository';
 import { OutgoingMessageBuilder } from '../libs/builders/OutgoingMessageBuilder';
+import { RESPONSE } from '../constants/StaticResponses';
+import {
+  ICampaignSubmissionRepositoryProvider,
+  ICampaignSubmissionRepositoryProviderToken,
+} from '../repositories/CampaignSubmissionRepositoryProvider';
+import { Types } from 'mongoose';
+import { IS3Service, IS3ServiceToken } from '../infrastructure/S3Service';
+import { TwilioClient } from '../infrastructure/twilio';
+import { InputHandlerProvider } from './input-helpers/InputHandlerProvider';
+import { IInputHandlerResult } from './input-helpers/InputHandler';
 
 @injectable()
 export class WorkerService {
   constructor(
     private userRepository: UserRepository,
     private userProfileRepository: UserProfileRepository,
+    private twilioClient: TwilioClient,
+    private inputHandlerProvider: InputHandlerProvider,
     @inject(IAppConfigToken) private appConfig: IAppConfig,
     @inject(ICampaignLoaderServiceToken) private campaignLoaderService: ICampaignLoaderService,
+    @inject(ICampaignSubmissionRepositoryProviderToken)
+    private repositoryProvider: ICampaignSubmissionRepositoryProvider,
+    @inject(IS3ServiceToken) private s3Service: IS3Service,
   ) {}
 
   async processMessage(incomingMessage: IIncomingMessage): Promise<IOutgoingMessage> {
@@ -55,11 +69,10 @@ export class WorkerService {
       incomingMessage,
       user.conversationState as ConversationState,
       user.campaignContext as ICampaignContext,
-      this.userProfileRepository,
     );
   }
 
-  async #setUserProfileCreationFlow(phoneNumber: string, messageSID: string) {
+  async #setUserProfileCreationFlow(phoneNumber: string, messageSID: string): Promise<void> {
     console.info(
       `Worker Service :: User Profile not created. Update conversation to trigger ${CampaignId.USER_PROFILE_ONBOARDING}`,
     );
@@ -81,77 +94,104 @@ export class WorkerService {
     await this.userRepository.updateConversation(
       phoneNumber,
       ConversationState.IDLE, // IDLE to indicate bot has to act.
+      phoneNumber, // submissionId - for user profile, it will be phone number
       userProfileFlow._id,
       userProfileFlow.steps[0].stepId,
     );
   }
 
   async #campaignRunner(
-    // campaignDefinition: ICampaignDefinition,
-    // campaignName: string,
     msg: IIncomingMessage,
     state: ConversationState,
     context: ICampaignContext,
-    repository: ICampaignSubmissionRepository,
   ): Promise<IOutgoingMessage> {
-    const flowId: string = context.flowId;
+    let questionStep = await this.campaignLoaderService.getQuestionStep(
+      context.flowId,
+      context.currentStepId,
+    );
+    const responseStrs: Array<string> = [];
+    let conversationStateChange: boolean = false;
+    let flowId: CampaignId = context.flowId;
     let stepId: string = context.currentStepId;
-    let conversationState: ConversationState = state;
-    let stateChange: boolean = true;
-
-    const questionStep: IQuestionStep = await this.campaignLoaderService.getQuestionStep(
-      flowId,
-      stepId,
-    );
-    const outgoingMsgBuilder: OutgoingMessageBuilder = new OutgoingMessageBuilder(
-      msg.messageSid,
-      msg.phoneNumber,
-      this.appConfig.twilioNumber,
-    );
+    let submissionId: string = context.submissionId;
 
     if (state === ConversationState.IDLE) {
-      console.info(`Worker Service :: Running campaign ${context.flowId}`);
-      outgoingMsgBuilder.setBody(questionStep.prompt);
-      conversationState = ConversationState.AWAITING_REPLY;
-    } else if (state == ConversationState.AWAITING_REPLY) {
-      console.info(
-        `Worker Service :: Processing user response for ${msg.phoneNumber} with Message SID: ${msg.messageSid}`,
-      );
-      if (new RegExp(questionStep.validationRegex || '').test(msg.messageText || '')) {
-        await repository.addResponse(
-          msg.phoneNumber,
-          questionStep.fieldName as string,
-          msg.messageText as string,
-        );
-        const nextStepId: string | undefined = questionStep.nextStepId;
-        let nextQuestionStep: IQuestionStep | undefined = undefined;
-        if (nextStepId) {
-          nextQuestionStep = await this.campaignLoaderService.getQuestionStep(
-            context.flowId,
-            nextStepId,
+      state = ConversationState.AWAITING_REPLY;
+      responseStrs.push(questionStep.prompt);
+      conversationStateChange = true;
+    } else {
+      const result: IInputHandlerResult = await this.inputHandlerProvider
+        .getHandler(questionStep.expectedResponseType)
+        .process({
+          campaignId: flowId,
+          step: questionStep,
+          submissionId: context.submissionId,
+          message: msg,
+        });
+      if (result.status) {
+        conversationStateChange = true;
+        responseStrs.push(RESPONSE.GENERIC_ACK);
+        if (result.nextStepId) {
+          questionStep = await this.campaignLoaderService.getQuestionStep(
+            flowId,
+            result.nextStepId,
           );
+          responseStrs.push(questionStep.prompt);
         }
-        outgoingMsgBuilder.setBody(`Thank you! ${nextQuestionStep?.prompt}`);
-        stepId = nextStepId || 'NONE';
+        stepId = result.nextStepId || '';
       } else {
-        console.info(
-          `Worker Service :: incorrect response by ${msg.phoneNumber} with message SID: ${msg.messageSid}. Sending fallback message`,
-        );
-        outgoingMsgBuilder.setBody(questionStep.fallbackMessage as string);
-        stateChange = false;
+        responseStrs.push(questionStep.fallbackMessage || RESPONSE.GENERIC_FALLBACK_MESSAGE);
       }
     }
-    if (stateChange) {
+
+    if (questionStep.runFlow) {
+      // jump to the flow referenced.
+      flowId = questionStep.runFlow as CampaignId;
+      questionStep = (await this.campaignLoaderService.getCampaignDefinition(flowId)).steps[0];
+      stepId = questionStep.stepId;
+      responseStrs.push(questionStep.prompt);
+
+      // create a submission entry since we're running a new campaign/flow which would need its own submission entry.
+      submissionId = await this.#createSubmissionEntryForCampaign(msg.phoneNumber, flowId);
+    }
+
+    state = stepId ? ConversationState.AWAITING_REPLY : ConversationState.IDLE;
+    if (conversationStateChange) {
       console.debug(
-        `Worker Service :: Updating conversation context in User table for ${msg.phoneNumber}, flowId: ${flowId}, stepId: ${stepId}`,
+        `WorkerService.campaignRunner :: Updating conversation context in User table for ${msg.phoneNumber}, flowId: ${flowId}, stepId: ${stepId}`,
       );
       await this.userRepository.updateConversation(
         msg.phoneNumber,
-        conversationState,
+        state,
+        submissionId,
         flowId,
         stepId,
       );
     }
-    return outgoingMsgBuilder.build();
+    const outgoingMsg: IOutgoingMessage = new OutgoingMessageBuilder(
+      msg.messageSid,
+      msg.phoneNumber,
+      this.appConfig.twilioNumber,
+    )
+      .setBody(responseStrs.join('\n'))
+      .build();
+    console.debug(
+      `WorkerService.campaignRunner :: Constructed response for ${msg.phoneNumber} with MsgSid: ${msg.messageSid} :: `,
+      outgoingMsg,
+    );
+    return outgoingMsg;
+  }
+
+  async #createSubmissionEntryForCampaign(phoneNumber: string, flowId: string): Promise<string> {
+    const repository = this.repositoryProvider.getSubmissionRepository(flowId as CampaignId);
+    if (repository && typeof repository.createSubmission === 'function') {
+      return (
+        (await repository.createSubmission(flowId, phoneNumber))._id as Types.ObjectId
+      ).toString();
+    } else {
+      throw new Error(
+        `WorkerService.#createSubmissionEntryForCampaign :: Submission repository or createSubmission method is undefined for ${flowId}.`,
+      );
+    }
   }
 }

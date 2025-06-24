@@ -9,7 +9,7 @@
  */
 export enum ExpectedResponseType {
   TEXT = 'TEXT',
-  NUMBER = 'NUMBER',
-  YES_NO = 'YES_NO',
+  CHOICE = 'CHOICE',
+  MAPPING = 'MAPPING',
   IMAGE = 'IMAGE',
 }

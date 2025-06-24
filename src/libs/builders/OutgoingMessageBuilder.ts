@@ -74,7 +74,7 @@ export class OutgoingMessageBuilder {
       );
     }
 
-    return {
+    const outgoingMessage: IOutgoingMessage = {
       replyForMsgSid: this.#replyForMsgSid,
       to: this.#to,
       from: this.#from,
@@ -82,5 +82,6 @@ export class OutgoingMessageBuilder {
       mediaUrl: this.#mediaUrl,
       statusCallback: this.#statusCallback,
     };
+    return outgoingMessage;
   }
 }

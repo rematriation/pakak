@@ -1,36 +1,36 @@
 /**
  * @author Daksh Pratap Singh
  * @email daksh204singh@gmail.com
- * @desc Campaign related data models.
+ * @desc Campaign Model
  */
 
-import { ExpectedResponseType } from '../constants/ExpectedResponseType';
+import mongoose, { Schema, Document } from 'mongoose';
 
-/**
- * Defines a single step/question within a campaign flow.
- */
-export interface IQuestionStep {
-  stepId: string;
-  prompt: string;
-  expectedResponseType: ExpectedResponseType;
-  fallbackMessage?: string;
-  validationRegex?: RegExp;
-  nextStepId?: string;
-  fieldName?: string;
-  runFlow?: string;
-}
-
-/**
- * Defines the structure of a Campaign Definition document stored in MongoDB.
- * This represents a conversational flow.
- */
-export interface ICampaignDefinition {
+export interface ICampaign {
   _id: string;
-  name: string;
+  name?: string;
   description?: string;
-  initialMessage?: string;
-  fallbackMessage?: string;
-  timeoutMessage?: string;
-  steps: IQuestionStep[];
-  isActive: boolean;
 }
+
+export interface ICampaignDocument extends ICampaign, Document {
+  _id: string;
+}
+
+const CampaignSchema: Schema = new Schema(
+  {
+    name: {
+      type: String,
+      required: false,
+    },
+    description: {
+      type: String,
+      required: false,
+    },
+  },
+  {
+    timestamps: true,
+    collection: 'Campaigns',
+  },
+);
+
+export const Campaign = mongoose.model<ICampaign>('Campaign', CampaignSchema);

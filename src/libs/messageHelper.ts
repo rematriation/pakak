@@ -27,3 +27,15 @@ export function extractCommandKeyword(msg: string): Command | null {
 
   return null;
 }
+
+/**
+ * Validates text on provided regular expression.
+ *
+ * @param text string that is to be validated. Defaults to an empty string.
+ * @param regex regular expression to be validated against.
+ * @returns boolean true on success, false otherwise.
+ */
+
+export function validateWithRegex(text: string = '', regex: RegExp): boolean {
+  return regex.test(text);
+}
