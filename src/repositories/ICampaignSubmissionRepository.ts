@@ -31,6 +31,15 @@ export interface ICampaignSubmissionRepository {
   addTextResponse(submissionId: string, fieldName: string, value: string): Promise<void>;
 
   /**
+   * Updates one or more fields within an existing campaign submission.
+   * This is used to save user responses or set data from routing rules.
+   * @param submissionId The ID of the submission record.
+   * @param fieldsToSet A record of key-value pairs representing the fields to update.
+   * @returns A Promise that resolves when the fields are updated.
+   */
+  addTextResponses(submissionId: string, fieldsToSet: Record<string, string>): Promise<void>;
+
+  /**
    * Adds media data to an existing campaign submission.
    * This typically stores metadata about an uploaded file.
    * @param submissionId The ID of the submission record.

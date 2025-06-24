@@ -253,4 +253,15 @@ export class UserProfileRepository implements ICampaignSubmissionRepository {
       throw error;
     }
   }
+
+  /**
+   * Optimize this method. Naive implementation.
+   * @param submissionId
+   * @param fieldsToSet
+   */
+  async addTextResponses(submissionId: string, fieldsToSet: Record<string, string>): Promise<void> {
+    for (const [fieldName, value] of Object.entries(fieldsToSet)) {
+      await this.addTextResponse(submissionId, fieldName, value);
+    }
+  }
 }

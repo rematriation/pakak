@@ -28,6 +28,7 @@ import {
 } from '../../repositories/CampaignSubmissionRepositoryProvider';
 import { IS3ServiceToken, S3Service } from '../../infrastructure/S3Service';
 import { TwilioClient } from '../../infrastructure/twilio';
+import { InputHandlerProvider } from '../../services/input-helpers/InputHandlerProvider';
 
 container.register(IAppConfigToken, { useClass: AppConfig });
 const appConfig: AppConfig = container.resolve(IAppConfigToken);
@@ -61,6 +62,9 @@ container.resolve(IS3ServiceToken);
 
 container.register(TwilioClient, { useClass: TwilioClient });
 container.resolve(TwilioClient);
+
+container.registerSingleton(InputHandlerProvider);
+container.resolve(InputHandlerProvider);
 
 container.register(WorkerService, { useClass: WorkerService });
 const workerService: WorkerService = container.resolve(WorkerService);

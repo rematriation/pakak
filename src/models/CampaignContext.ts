@@ -4,8 +4,10 @@
  * @desc Conversation Context
  */
 
+import { CampaignId } from '../constants/CampaignId';
+
 export interface ICampaignContext {
   readonly submissionId: string;
-  readonly flowId: string;
+  readonly flowId: CampaignId;
   readonly currentStepId: string;
 }

@@ -87,6 +87,17 @@ export class CampaignSubmissionRepository implements ICampaignSubmissionReposito
   }
 
   /**
+   * Optimize this method. Naive implementation.
+   * @param submissionId
+   * @param fieldsToSet
+   */
+  async addTextResponses(submissionId: string, fieldsToSet: Record<string, string>): Promise<void> {
+    for (const [fieldName, value] of Object.entries(fieldsToSet)) {
+      await this.addTextResponse(submissionId, fieldName, value);
+    }
+  }
+
+  /**
    * Adds media data to an existing campaign submission.
    * This updates the 'media' in the Submission document.
    *

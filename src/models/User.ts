@@ -78,7 +78,7 @@ const userSchema = new dynamoose.Schema(
       type: String,
       enum: Object.values(ConversationState),
       required: false,
-      default: ConversationState.AWAITING_IMAGE_UPLOAD,
+      default: ConversationState.IDLE,
     },
     campaignContext: {
       type: Object,

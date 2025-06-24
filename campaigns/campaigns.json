@@ -28,7 +28,7 @@
       {
         "stepId": "ask_zipcode",
         "prompt": "What's your 5-digit zip code?",
-        "expectedResponseType": "NUMBER",
+        "expectedResponseType": "TEXT",
         "validationRegex": "^\\d{5}$",
         "nextStepId": "complete_profile_flow",
         "fieldName": "zipCode",
@@ -76,8 +76,8 @@
             "nextStepId": "ask_time"
           },
           {
-            "conditionRegex": "^\\s*[Nn]([Oo][.])?\\s*$",
-            "nextStepId": "ask_location"
+            "conditionRegex": "^\\s*[Nn]([Oo])?[.]*\\s*$",
+            "nextStepId": "ask_knows_location"
           }
         ],
         "fallbackMessage": "I'm sorry, I didn't understand that. Please reply with either 'yes' or 'no'."
@@ -87,7 +87,7 @@
         "prompt": "About what year or decade was the original picture taken? Reply with 4 numbers like '1990' or '2002'. If you're not sure, ask an adult. Msg & data rates may apply. Reply STOP to opt-out.",
         "expectedResponseType": "TEXT",
         "validationRegex": "^\\s*([12]\\d{3})\\.?\\s*$",
-        "nextStepId": "ask_location",
+        "nextStepId": "ask_knows_location",
         "fieldName": "picture_time",
         "fallbackMessage": "Oops! Be sure to give us all four digits of the decade, such as \"2020\""
       },
@@ -101,7 +101,7 @@
             "nextStepId": "ask_location"
           },
           {
-            "conditionRegex": "^\\s*[Nn]([Oo][.])?\\s*$",
+            "conditionRegex": "^\\s*[Nn]([Oo])?[.]*\\s*$",
             "nextStepId": "ask_value"
           }
         ],
@@ -129,7 +129,7 @@
             }
           },
           {
-            "conditionRegex": "^\\s*[Nn]([Oo][.])?\\s*$",
+            "conditionRegex": "^\\s*[Nn]([Oo])?[.]*\\s*$",
             "nextStepId": "ask_state_or_country"
           }
         ],
@@ -147,7 +147,7 @@
       {
         "stepId": "ask_value",
         "prompt": "Last question. What Iñupiat Iḷitqusiat best describes this picture for you? Reply with the number for your choice:\n\n**RESPECT**\n1. Respect for Elders\n2. Respect for Nature\n3. Respect for Others\n\n**GLOBAL**\n4. Cooperation\n5. Sharing\n6. Avoid Conflict\n\n**PERSONAL**\n7. Humility\n8. Humor\n9. Hard Work\n10. Spirtuality\n\n**TRIBAL**\n11. Responsibility to Tribe\n12. Love for Children\n13. Domestic Skills\n14. Family Roles\n\n**KNOWLEDGE**\n15. Knowledge of Language\n16. Knowledge of Family Tree\n17. Hunter Success",
-        "expectedResponseType": "NUMBER_MAPPING",
+        "expectedResponseType": "MAPPING",
         "mapping": {
           "1": "Respect for Elders",
           "2": "Respect for Nature",
@@ -176,7 +176,7 @@
         "stepId": "complete_archive_flow",
         "prompt": "Great! Thank you for adding your picture to the archive.",
         "expectedResponseType": "NONE",
-        "nextStepId": "ask_for_picture"
+        "runFlow": "image_archive_campaign"
       }
     ],
     "isActive": true,
