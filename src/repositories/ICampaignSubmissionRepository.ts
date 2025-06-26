@@ -4,7 +4,7 @@
  * @desc Campaign Repository interface.
  */
 
-import { ICampaignSubmissionDocument } from '../models/CampaignSubmission';
+import { ICampaignSubmission, ICampaignSubmissionDocument } from '../models/CampaignSubmission';
 import { IMedia } from '../models/Media';
 
 /**
@@ -56,4 +56,6 @@ export interface ISubmissionRepository {
 export interface ICampaignSubmissionRepository extends ISubmissionRepository {
   // Make below method required.
   addOrUpdateMediaToSubmission(submissionId: string, media: IMedia): Promise<void>;
+  getSubmissionsByUser(phoneNumber: string): Promise<ICampaignSubmissionDocument[]>;
+  deleteSubmission(submissionId: string): Promise<ICampaignSubmission | null>;
 }

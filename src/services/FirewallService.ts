@@ -9,6 +9,7 @@ import { TWI_ML_RESPONSE } from '../constants/StaticResponses';
 import { ISQSService, ISQSServiceToken } from '../infrastructure/SQSService';
 import { IAppConfig, IAppConfigToken } from '../configs/AppConfig';
 import { IIncomingMessage } from '../models/IncomingMessage';
+import { DeletionStatus } from '../constants/DeletionStatus';
 
 @injectable()
 export class FirewallService {
@@ -27,7 +28,7 @@ export class FirewallService {
     incomingMsg.messageText = msgBody;
     const cmd: Command | null = extractCommandKeyword(msgBody);
 
-    if (user.awaitingDeletion) {
+    if (user.deletionStatus) {
       return this.#handleUserAwaitingDeletion(phoneNumber);
     }
 
@@ -84,7 +85,7 @@ export class FirewallService {
    */
   async #deleteUserData(phoneNumber: string): Promise<APIGatewayProxyResult> {
     console.debug(`FirewallService :: User ${phoneNumber} requested to delete their data.`);
-    await this.userRepository.setAwaitingDeletion(phoneNumber, 1);
+    await this.userRepository.setDeletionStatus(phoneNumber, DeletionStatus.REQUESTED);
     return twilioResponse(TWI_ML_RESPONSE.DELETE_CONFIRMATION_MESSAGE);
   }
 
@@ -107,7 +108,7 @@ export class FirewallService {
    */
   async #returnHelpMessage(phoneNumber: string): Promise<APIGatewayProxyResult> {
     console.debug(
-      `FirewallService :: User ${phoneNumber} requested for HELP. Twilio will send the message.`,
+      `FirewallService :: User ${phoneNumber} requested for HELP. Twilio will handle it.`,
     );
     await this.userRepository.releaseProcessingLock(phoneNumber);
     return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);

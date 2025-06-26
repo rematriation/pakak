@@ -85,6 +85,7 @@ export class ScannerService {
         .setBody(
           `Virus scan status: ${submissionId}, result: ${message}, key: ${s3FileObject.key}, bucket: ${bucket}`,
         )
+        .setKeepLockAlive(true)
         .build();
       console.debug(`ScannerService.scan :: outgoing message constructed.`, outgoingMessage);
       return {

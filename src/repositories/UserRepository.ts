@@ -4,6 +4,7 @@ import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 import { checkErrorisConditionalCheckFailedException } from '../infrastructure/dynamoose';
 import { injectable } from 'tsyringe';
 import { ConversationState } from '../constants/ConversationState';
+import { DeletionStatus } from '../constants/DeletionStatus';
 
 @injectable()
 export class UserRepository {
@@ -31,10 +32,10 @@ export class UserRepository {
     await UserModel.update({ phone }, { subscriptionStatus: optIn, isProcessingMessage: 0 });
   }
 
-  async setAwaitingDeletion(phone: string, flag: 0 | 1): Promise<void> {
+  async setDeletionStatus(phone: string, flag: DeletionStatus): Promise<void> {
     await UserModel.update(
       { phone },
-      { awaitingDeletion: flag, subscriptionStatus: false, isProcessingMessage: 0 },
+      { deletionStatus: flag, subscriptionStatus: false, isProcessingMessage: 0 },
     );
   }
 
@@ -152,9 +153,33 @@ export class UserRepository {
     await UserModel.update(
       { phone },
       {
-        conversationState: null,
-        conversationContextData: null,
+        conversationState: ConversationState.IDLE,
+        conversationContextData: {},
+        isProcessingMessage: 0,
       },
     );
+  }
+
+  /**
+   * Retrieves users from DynamoDB based on their awaitingDeletion flag.
+   * This queries the 'DeletionStatusIndex'.
+   * @param flag The awaitingDeletion flag value (0 or 1).
+   * @returns A Promise resolving to an array of IUser (DynamoDB User) objects.
+   * @throws Error if the query fails.
+   */
+  public async getUsersByDeletionFlag(flag: DeletionStatus): Promise<IUser[]> {
+    try {
+      const users = await UserModel.query({
+        deletionStatus: {
+          eq: flag,
+        },
+      })
+        .using('DeletionStatusIndex')
+        .exec();
+      return users as unknown as IUser[];
+    } catch (error) {
+      console.error(`UserRepository :: Error querying users by deletion flag ${flag}:`, error);
+      throw error;
+    }
   }
 }

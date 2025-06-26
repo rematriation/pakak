@@ -150,6 +150,7 @@ export class WorkerService {
       responseStrs.push(questionStep.prompt);
 
       // create a submission entry since we're running a new campaign/flow which would need its own submission entry.
+      await this.userProfileRepository.addCampaignId(msg.phoneNumber, flowId);
       submissionId = await this.#createSubmissionEntryForCampaign(msg.phoneNumber, flowId);
     }
 

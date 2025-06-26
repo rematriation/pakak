@@ -18,6 +18,7 @@ export class OutgoingMessageBuilder {
   #body?: string;
   #mediaUrl?: string[];
   #statusCallback?: string;
+  #keepLockAlive?: boolean;
 
   /**
    * Initializes the builder with required parameters for the outgoing message.
@@ -62,6 +63,16 @@ export class OutgoingMessageBuilder {
   }
 
   /**
+   * Sets the keepLockAlive boolean.
+   * @param keepLockAlive boolean.
+   * @returns The builder instance for chaining.
+   */
+  setKeepLockAlive(keepLockAlive: boolean): OutgoingMessageBuilder {
+    this.#keepLockAlive = keepLockAlive;
+    return this;
+  }
+
+  /**
    * Builds the final IOutgoingMessage object.
    * @returns The immutable IOutgoingMessage object.
    * @throws Error if the message has neither body nor media URLs.
@@ -81,6 +92,7 @@ export class OutgoingMessageBuilder {
       body: this.#body,
       mediaUrl: this.#mediaUrl,
       statusCallback: this.#statusCallback,
+      keepLockActive: this.#keepLockAlive,
     };
     return outgoingMessage;
   }
