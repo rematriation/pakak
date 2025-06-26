@@ -1,3 +1,9 @@
+/**
+ * @author Daksh Pratap Singh
+ * @email daksh204singh@gmail.com
+ * @desc Campaign Submission Repository.
+ */
+
 import { injectable } from 'tsyringe';
 import { ICampaignSubmissionRepository } from './ICampaignSubmissionRepository';
 import { CampaignSubmissionModel, ICampaignSubmissionDocument } from '../models/CampaignSubmission';

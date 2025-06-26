@@ -32,6 +32,10 @@ export interface IAppConfig {
   rawBucketName: string;
   cleanBucketName: string;
   quarantineBucketName: string;
+  adminPhone: string;
+  clamavDBS3Bucket: string;
+  clamavDBPath: string;
+  binDir: string;
 }
 
 /**
@@ -63,6 +67,10 @@ export class AppConfig implements IAppConfig {
   public readonly rawBucketName: string;
   public readonly cleanBucketName: string;
   public readonly quarantineBucketName: string;
+  public readonly adminPhone: string;
+  public readonly clamavDBS3Bucket: string;
+  public readonly clamavDBPath: string;
+  public readonly binDir: string;
 
   constructor() {
     this.appStage = this.getRequiredEnv('APP_STAGE');
@@ -83,6 +91,10 @@ export class AppConfig implements IAppConfig {
     this.rawBucketName = this.getRequiredEnv('RAW_BUCKET_NAME');
     this.cleanBucketName = this.getRequiredEnv('CLEAN_BUCKET_NAME');
     this.quarantineBucketName = this.getRequiredEnv('QUARANTINE_BUCKET_NAME');
+    this.adminPhone = this.getRequiredEnv('ADMIN_PHONE');
+    this.clamavDBS3Bucket = this.getRequiredEnv('CLAMAV_DB_S3_BUCKET');
+    this.clamavDBPath = this.getRequiredEnv('CLAMAV_DB_PATH');
+    this.binDir = this.getRequiredEnv('BIN_DIR');
   }
 
   /**

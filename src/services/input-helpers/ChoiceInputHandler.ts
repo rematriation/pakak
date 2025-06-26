@@ -1,6 +1,6 @@
 import { validateWithRegex } from '../../libs/messageHelper';
-import { ICampaignSubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
-import { ICampaignSubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
+import { ISubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
+import { ISubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
 /**
  * @author Daksh Pratap Singh
  * @email daksh204singh@gmail.com
@@ -9,7 +9,7 @@ import { ICampaignSubmissionRepository } from '../../repositories/ICampaignSubmi
 import { IInputHandlerContext, IInputHandlerResult, IInputHandler } from './InputHandler';
 
 export class ChoiceInputHandler implements IInputHandler {
-  constructor(private repositoryProvider: ICampaignSubmissionRepositoryProvider) {}
+  constructor(private repositoryProvider: ISubmissionRepositoryProvider) {}
 
   async process(context: IInputHandlerContext): Promise<IInputHandlerResult> {
     const msg = context.message;
@@ -19,7 +19,7 @@ export class ChoiceInputHandler implements IInputHandler {
     console.info(
       `ChoiceInputHandler.process :: Processing user's text response for ${msg.phoneNumber} with Message SID: ${msg.messageSid}`,
     );
-    const repository: ICampaignSubmissionRepository =
+    const repository: ISubmissionRepository =
       this.repositoryProvider.getSubmissionRepository(campaignId);
     if (!questionStep.routingRules) {
       console.error(

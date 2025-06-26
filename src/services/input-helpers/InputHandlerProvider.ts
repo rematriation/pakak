@@ -4,8 +4,8 @@ import { IS3ServiceToken, S3Service } from '../../infrastructure/S3Service';
 import { TwilioClient } from '../../infrastructure/twilio';
 import { ExpectedResponseType } from '../../constants/ExpectedResponseType';
 import {
-  ICampaignSubmissionRepositoryProvider,
-  ICampaignSubmissionRepositoryProviderToken,
+  ISubmissionRepositoryProvider,
+  ISubmissionRepositoryProviderToken,
 } from '../../repositories/CampaignSubmissionRepositoryProvider';
 import { IInputHandler } from './InputHandler';
 import { TextInputHandler } from './TextInputHandler';
@@ -18,8 +18,8 @@ export class InputHandlerProvider {
   #mapInputHandlers: Map<ExpectedResponseType, IInputHandler>;
   constructor(
     private twilioClient: TwilioClient,
-    @inject(ICampaignSubmissionRepositoryProviderToken)
-    private repositoryProvider: ICampaignSubmissionRepositoryProvider,
+    @inject(ISubmissionRepositoryProviderToken)
+    private repositoryProvider: ISubmissionRepositoryProvider,
     @inject(IAppConfigToken) private appConfig: IAppConfig,
     @inject(IS3ServiceToken) private s3Service: S3Service,
   ) {

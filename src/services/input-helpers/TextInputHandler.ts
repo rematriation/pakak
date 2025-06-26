@@ -4,12 +4,12 @@
  * @desc Text response handler. Includes numbers as well.
  */
 import { validateWithRegex } from '../../libs/messageHelper';
-import { ICampaignSubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
-import { ICampaignSubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
+import { ISubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
+import { ISubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
 import { IInputHandlerContext, IInputHandlerResult, IInputHandler } from './InputHandler';
 
 export class TextInputHandler implements IInputHandler {
-  constructor(private repositoryProvider: ICampaignSubmissionRepositoryProvider) {}
+  constructor(private repositoryProvider: ISubmissionRepositoryProvider) {}
 
   async process(context: IInputHandlerContext): Promise<IInputHandlerResult> {
     const msg = context.message;
@@ -19,7 +19,7 @@ export class TextInputHandler implements IInputHandler {
     console.info(
       `TextInputHandler.process :: Processing user's text response for ${msg.phoneNumber} with Message SID: ${msg.messageSid}`,
     );
-    const repository: ICampaignSubmissionRepository =
+    const repository: ISubmissionRepository =
       this.repositoryProvider.getSubmissionRepository(campaignId);
     if (validateWithRegex(messageTxt, new RegExp(questionStep.validationRegex as string))) {
       if (questionStep.fieldName) {

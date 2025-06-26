@@ -14,7 +14,7 @@ export const TWI_ML_RESPONSE = {
     '<Response><Message>Sorry, I don&apos;t understand that command. Try START or STOP.</Message></Response>',
   ),
   PROCESSING_REQUEST: asTwimlXmlString(
-    '<Response><Message>We are currently processing another request for you. Please wait a moment.</Message></Response>',
+    '<Response><Message>Please wait a moment...</Message></Response>',
   ),
   WELCOME_MESSAGE: asTwimlXmlString(
     '<Response><Message>Hi from us at Aqqaluk Trust! Welcome to our special Sivu Summer archiving activity.\nReply "START" to subscribe, continue receiving msgs from us, and complete the Sivu Summer activity.\nMsg &amp; data rates may apply. Reply STOP to unsubscribe at anytime.</Message></Response>',

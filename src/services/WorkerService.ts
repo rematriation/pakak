@@ -25,12 +25,11 @@ import { IOutgoingMessage } from '../models/OutgoingMessage';
 import { OutgoingMessageBuilder } from '../libs/builders/OutgoingMessageBuilder';
 import { RESPONSE } from '../constants/StaticResponses';
 import {
-  ICampaignSubmissionRepositoryProvider,
-  ICampaignSubmissionRepositoryProviderToken,
+  ISubmissionRepositoryProvider,
+  ISubmissionRepositoryProviderToken,
 } from '../repositories/CampaignSubmissionRepositoryProvider';
 import { Types } from 'mongoose';
 import { IS3Service, IS3ServiceToken } from '../infrastructure/S3Service';
-import { TwilioClient } from '../infrastructure/twilio';
 import { InputHandlerProvider } from './input-helpers/InputHandlerProvider';
 import { IInputHandlerResult } from './input-helpers/InputHandler';
 
@@ -39,12 +38,11 @@ export class WorkerService {
   constructor(
     private userRepository: UserRepository,
     private userProfileRepository: UserProfileRepository,
-    private twilioClient: TwilioClient,
     private inputHandlerProvider: InputHandlerProvider,
     @inject(IAppConfigToken) private appConfig: IAppConfig,
     @inject(ICampaignLoaderServiceToken) private campaignLoaderService: ICampaignLoaderService,
-    @inject(ICampaignSubmissionRepositoryProviderToken)
-    private repositoryProvider: ICampaignSubmissionRepositoryProvider,
+    @inject(ISubmissionRepositoryProviderToken)
+    private repositoryProvider: ISubmissionRepositoryProvider,
     @inject(IS3ServiceToken) private s3Service: IS3Service,
   ) {}
 

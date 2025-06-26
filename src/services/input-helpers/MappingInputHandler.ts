@@ -4,16 +4,16 @@
  * @desc Text response handler. Includes numbers as well.
  */
 import { IInputHandlerContext, IInputHandlerResult, IInputHandler } from './InputHandler';
-import { ICampaignSubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
-import { ICampaignSubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
+import { ISubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
+import { ISubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
 
 export class MappingInputHandler implements IInputHandler {
-  constructor(private repositoryProvider: ICampaignSubmissionRepositoryProvider) {}
+  constructor(private repositoryProvider: ISubmissionRepositoryProvider) {}
 
   async process(context: IInputHandlerContext): Promise<IInputHandlerResult> {
     const { campaignId, step, submissionId, message } = context;
     const messageTxt: string = message.messageText || '';
-    const repository: ICampaignSubmissionRepository =
+    const repository: ISubmissionRepository =
       this.repositoryProvider.getSubmissionRepository(campaignId);
     if (!step.mapping) {
       console.error(

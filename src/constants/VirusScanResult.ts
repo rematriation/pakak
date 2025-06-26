@@ -1,12 +1,12 @@
 /**
  * @author Daksh Pratap Singh
  * @email daksh204singh@gmail.com
- * @desc Virus scan result enum.
+ * @desc Virus scan status enum.
  */
 
-export enum VirusScanResult {
+export enum VirusScanStatus {
   NOT_AVAILABLE = 'NOT_AVAILABLE',
   CLEAN = 'CLEAN',
-  QUARANTINED = 'QUARANTINED',
+  INFECTED = 'INFECTED',
   FAILED = 'FAILED',
 }

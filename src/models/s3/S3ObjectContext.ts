@@ -4,7 +4,8 @@
  * @desc Parent interface for common S3 object metadata and tags.
  */
 
-import { ScanStatus } from '../../constants/ScanStatus';
+import { CampaignId } from '../../constants/CampaignId';
+import { FileScanStatus } from '../../constants/FileScanStatus';
 
 /**
  * Defines common context fields for S3 objects that link them to application data.
@@ -12,7 +13,7 @@ import { ScanStatus } from '../../constants/ScanStatus';
 export interface IS3ObjectContext {
   submissionId: string;
   phoneNumber: string;
-  campaignId: string;
+  campaignId: CampaignId;
   msgSid: string;
-  scanStatus?: ScanStatus;
+  scanStatus?: FileScanStatus;
 }

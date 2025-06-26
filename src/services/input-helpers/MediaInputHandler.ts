@@ -4,21 +4,22 @@
  * @desc Text response handler. Includes numbers as well.
  */
 import { IAppConfig } from '../../configs/AppConfig';
-import { ScanStatus } from '../../constants/ScanStatus';
-import { VirusScanResult } from '../../constants/VirusScanResult';
+import { CampaignId } from '../../constants/CampaignId';
+import { FileScanStatus } from '../../constants/FileScanStatus';
+import { VirusScanStatus } from '../../constants/VirusScanResult';
 import { S3Service } from '../../infrastructure/S3Service';
 import { TwilioClient } from '../../infrastructure/twilio';
 import { validateWithRegex } from '../../libs/messageHelper';
 import { IMedia } from '../../models/Media';
 import { IS3ObjectMetadata } from '../../models/s3/S3ObjectMetadata';
 import { IS3ObjectTags } from '../../models/s3/S3ObjectTags';
-import { ICampaignSubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
-import { ICampaignSubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
+import { ISubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
+import { ISubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
 import { IInputHandlerContext, IInputHandlerResult, IInputHandler } from './InputHandler';
 
 export class MediaInputHandler implements IInputHandler {
   constructor(
-    private repositoryProvider: ICampaignSubmissionRepositoryProvider,
+    private repositoryProvider: ISubmissionRepositoryProvider,
     private twilioClient: TwilioClient,
     private s3Service: S3Service,
     private appConfig: IAppConfig,
@@ -31,7 +32,7 @@ export class MediaInputHandler implements IInputHandler {
     console.info(
       `MediaInputHandler.#processor :: Processing user's media response for ${message.phoneNumber} with message SID: ${message.messageSid}`,
     );
-    const repository: ICampaignSubmissionRepository =
+    const repository: ISubmissionRepository =
       this.repositoryProvider.getSubmissionRepository(campaignId);
 
     if (!step.validationRegex) {
@@ -98,7 +99,7 @@ export class MediaInputHandler implements IInputHandler {
   }
 
   async #uploadCampaignMedia(
-    campaignId: string,
+    campaignId: CampaignId,
     phoneNumber: string,
     submissionId: string,
     mediaUrl: string,
@@ -114,7 +115,7 @@ export class MediaInputHandler implements IInputHandler {
       phoneNumber: phoneNumber,
       submissionId: submissionId,
       msgSid: msgSid,
-      scanStatus: ScanStatus.PENDING,
+      scanStatus: FileScanStatus.PENDING,
     };
     const tags: IS3ObjectTags = metadata;
     const s3Url: string = await this.s3Service.uploadFile(
@@ -131,9 +132,7 @@ export class MediaInputHandler implements IInputHandler {
       key: key,
       url: s3Url,
       mime_type: mediaContentType,
-      size_kb: Math.round(buffer.length / 1024),
-      sha256: undefined,
-      virus_scan: { checkedAt: new Date(), engine: 'N/A', result: VirusScanResult.NOT_AVAILABLE },
+      virus_scan: { checkedAt: new Date(), result: VirusScanStatus.NOT_AVAILABLE },
     };
   }
 }

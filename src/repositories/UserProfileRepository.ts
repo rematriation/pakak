@@ -11,13 +11,13 @@ import { MONGO_ERROR_CODES } from '../libs/errors/MongoErrorCodes';
 import { ErrorCode } from '../libs/errors/ErrorCode';
 import { AppError } from '../libs/errors/AppError';
 import mongoose from 'mongoose';
-import { ICampaignSubmissionRepository } from './ICampaignSubmissionRepository';
+import { ISubmissionRepository } from './ICampaignSubmissionRepository';
 
 /**
  * Repository for managing UserProfile data in MongoDB Atlas using Mongoose.
  */
 @injectable()
-export class UserProfileRepository implements ICampaignSubmissionRepository {
+export class UserProfileRepository implements ISubmissionRepository {
   /**
    * Retrieves a user profile by their phone number.
    * Assumes the Mongoose connection is already established.

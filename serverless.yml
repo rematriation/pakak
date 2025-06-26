@@ -27,6 +27,8 @@ provider:
     TWILIO_ACCOUNT_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_SID}
     TWILIO_AUTH_TOKEN: ${ssm:/pakak/${self:provider.stage}/TWILIO_TOKEN}
 
+    ADMIN_PHONE: ${ssm:/pakak/${self:provider.stage}/ADMIN_PHONE}
+
     INCOMING_SQS_QUEUE_URL: !GetAtt IncomingQueue.QueueUrl
     OUTGOING_SQS_QUEUE_URL: !GetAtt OutgoingQueue.QueueUrl
 
@@ -37,6 +39,17 @@ provider:
     RAW_BUCKET_NAME: pakak-${self:provider.stage}-raw
     CLEAN_BUCKET_NAME: pakak-${self:provider.stage}-clean
     QUARANTINE_BUCKET_NAME: pakak-${self:provider.stage}-quarantine
+
+    # ClamAV stuff
+    # Path setting for ClamAV
+    PATH: '/opt/clamav/bin:${PATH}'
+    LD_LIBRARY_PATH: '/opt/clamav/lib:${LD_LIBRARY_PATH:-}'
+
+    # environment variables for ClamAV referenced in code
+    CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
+    CLAMAV_DB_PATH: /tmp/clamav
+
+    BIN_DIR: /opt/clamav/bin
 
   iam:
     role:
@@ -55,13 +68,24 @@ provider:
           Resource:
             - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-incoming.fifo
             - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-outgoing.fifo
+            - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-scanner-dlq
 
         - Effect: Allow
-          Action: s3:*
+          Action:
+            - s3:*
           Resource:
             - arn:aws:s3:::pakak-${self:provider.stage}-raw/*
             - arn:aws:s3:::pakak-${self:provider.stage}-clean/*
             - arn:aws:s3:::pakak-${self:provider.stage}-quarantine/*
+            - arn:aws:s3:::pakak-lambda-layers/*
+            - arn:aws:s3:::pakak-${self:provider.stage}-raw
+            - arn:aws:s3:::pakak-${self:provider.stage}-clean
+            - arn:aws:s3:::pakak-${self:provider.stage}-quarantine
+            - arn:aws:s3:::pakak-lambda-layers
+
+        - Effect: Allow
+          Action: lambda:GetLayerVersion
+          Resource: arn:aws:lambda:us-east-1:698528537338:layer:clamav-prod:6
 
         # - Effect: Allow
         #   Action:
@@ -109,13 +133,21 @@ functions:
           maximumBatchingWindow: 0
 
   scanner:
+    architecture: arm64
     handler: dist/functions/scanner/handler.handler
-    memorySize: 1024
-    timeout: 30
+    memorySize: 2048
+    timeout: 300
     events:
       - s3:
           bucket: pakak-${self:provider.stage}-raw
           event: s3:ObjectCreated:*
+    layers:
+      - arn:aws:lambda:us-east-1:698528537338:layer:clamav-prod:6
+    onError:
+      Fn::GetAtt: [ScannerDLQ, Arn]
+    environment:
+      CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
+      CLAMAV_DB_PATH: /tmp/clamav
 
   dispatcher:
     handler: dist/functions/dispatcher/handler.handler
@@ -173,6 +205,11 @@ resources:
       Properties:
         FifoQueue: true
         QueueName: pakak-${self:provider.stage}-outgoing-dlq.fifo
+
+    ScannerDLQ:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: pakak-${self:provider.stage}-scanner-dlq
 
     # Main FIFO queues
     IncomingQueue:
