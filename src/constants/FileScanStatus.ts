@@ -4,7 +4,7 @@
  * @desc Scan status enum.
  */
 
-export enum ScanStatus {
+export enum FileScanStatus {
   PENDING = 'PENDING',
   IN_PROGRESS = 'IN_PROGRESS',
   FAILED = 'FAILED',

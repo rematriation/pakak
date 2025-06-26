@@ -1,19 +1,23 @@
 /**
  * @author Daksh Pratap Singh
  * @email daksh204singh@gmail.com
- * @create date 2025-06-09 01:58:14
- * @modify date 2025-06-09 01:58:14
  * @desc FIFO SQS interface and injectable implementation.
  */
 
 import { SendMessageCommand, SQSClient } from '@aws-sdk/client-sqs';
 import { injectable } from 'tsyringe';
+import { IOutgoingMessage } from '../models/OutgoingMessage';
+import { IIncomingMessage } from '../models/IncomingMessage';
 
 /**
  * Interface defining the contract for an SQS messaging service.
  */
 export interface ISQSService {
-  sendMessage(queueURL: string, messageBody: string, messageGroupId: string): Promise<void>;
+  sendMessage(
+    queueURL: string,
+    messageBody: IOutgoingMessage | IIncomingMessage,
+    messageGroupId: string,
+  ): Promise<void>;
 }
 
 /**
@@ -42,10 +46,14 @@ export class SQSService implements ISQSService {
    * @param messageGroupId The message group ID.
    * @returns A Promise that resolves when the message has been successfully sent.
    */
-  async sendMessage(queueUrl: string, messageBody: string, messageGroupId: string): Promise<void> {
+  async sendMessage(
+    queueUrl: string,
+    messageBody: IIncomingMessage | IOutgoingMessage,
+    messageGroupId: string,
+  ): Promise<void> {
     const cmd = new SendMessageCommand({
       QueueUrl: queueUrl,
-      MessageBody: messageBody,
+      MessageBody: JSON.stringify(messageBody),
       MessageGroupId: messageGroupId,
     });
     console.debug(`SQSService :: Pushing message to ${queueUrl} :: `, cmd);

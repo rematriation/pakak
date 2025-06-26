@@ -8,11 +8,11 @@ import { ICampaignSubmissionDocument } from '../models/CampaignSubmission';
 import { IMedia } from '../models/Media';
 
 /**
- * Defines the contract for a repository that manages campaign submissions.
+ * Defines the contract for a repository that manages submissions.
  * This interface outlines methods for creating a new submission record
  * and adding individual responses to it.
  */
-export interface ICampaignSubmissionRepository {
+export interface ISubmissionRepository {
   /**
    * Creates a new campaign submission record for a user.
    * @param campaignId The ID of the campaign (e.g., 'user_profile_onboarding').
@@ -47,4 +47,13 @@ export interface ICampaignSubmissionRepository {
    * @returns A Promise that resolves when the media data is added.
    */
   addOrUpdateMediaToSubmission?(submissionId: string, media: IMedia): Promise<void>;
+}
+
+/**
+ * Defines the contract for a repository that manages campaign submissions.
+ * Extends SubmissionRepository.
+ */
+export interface ICampaignSubmissionRepository extends ISubmissionRepository {
+  // Make below method required.
+  addOrUpdateMediaToSubmission(submissionId: string, media: IMedia): Promise<void>;
 }

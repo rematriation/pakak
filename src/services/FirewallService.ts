@@ -49,11 +49,7 @@ export class FirewallService {
     console.debug(
       `FirewallService :: Pushing message to ${this.appConfig.incomingSqsQueueUrl} with msg :: `,
     );
-    await this.sqsService.sendMessage(
-      this.appConfig.incomingSqsQueueUrl,
-      JSON.stringify(incomingMsg),
-      phoneNumber,
-    );
+    await this.sqsService.sendMessage(this.appConfig.incomingSqsQueueUrl, incomingMsg, phoneNumber);
     if (cmd === Command.START) {
       return this.#subscribeUser(phoneNumber, user.subscriptionStatus);
     }

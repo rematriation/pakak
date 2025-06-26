@@ -5,7 +5,7 @@
  */
 
 import { CampaignId } from '../../constants/CampaignId';
-import { ScanStatus } from '../../constants/ScanStatus';
+import { FileScanStatus } from '../../constants/FileScanStatus';
 
 /**
  * Defines common context fields for S3 objects that link them to application data.
@@ -15,5 +15,5 @@ export interface IS3ObjectContext {
   phoneNumber: string;
   campaignId: CampaignId;
   msgSid: string;
-  scanStatus?: ScanStatus;
+  scanStatus?: FileScanStatus;
 }

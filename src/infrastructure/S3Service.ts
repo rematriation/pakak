@@ -17,7 +17,7 @@ import { IAppConfig, IAppConfigToken } from '../configs/AppConfig'; // Assuming 
 import { IS3ObjectMetadata } from '../models/s3/S3ObjectMetadata';
 import { IS3ObjectTags } from '../models/s3/S3ObjectTags';
 import { IS3ObjectData } from '../models/s3/S3ObjectData';
-import { ScanStatus } from '../constants/ScanStatus';
+import { FileScanStatus } from '../constants/FileScanStatus';
 import { CampaignId } from '../constants/CampaignId';
 import { Readable } from 'stream';
 
@@ -26,6 +26,11 @@ import { Readable } from 'stream';
  * Defines the contract for uploading files to S3.
  */
 export interface IS3Service {
+  /**
+   * @returns S3Client object for custom operations not related to application logic.
+   */
+  getClient(): S3Client;
+
   /**
    * Uploads a single file to an S3 bucket and returns its public URL.
    * Assumes the bucket is configured for public read access.
@@ -75,7 +80,7 @@ export interface IS3Service {
     sourceKey: string,
     destBucket: string,
     destKey: string,
-  ): Promise<void>;
+  ): Promise<string>;
 }
 
 /**
@@ -131,7 +136,7 @@ export class S3Service implements IS3Service {
 
     try {
       await this.s3Client.send(command);
-      const url = `https://${bucketName}.s3.${this.awsRegion}.amazonaws.com/${key}`;
+      const url = this.constructUrl(bucketName, key);
       console.log(
         `S3Service :: File uploaded successfully to s3://${bucketName}/${key}. URL: ${url}`,
       );
@@ -140,6 +145,10 @@ export class S3Service implements IS3Service {
       console.error(`S3Service :: Failed to upload file to s3://${bucketName}/${key}:`, error);
       throw error;
     }
+  }
+
+  private constructUrl(bucketName: string, key: string) {
+    return `https://${bucketName}.s3.${this.awsRegion}.amazonaws.com/${key}`;
   }
 
   public async getFile(bucketName: string, key: string): Promise<IS3ObjectData> {
@@ -171,7 +180,7 @@ export class S3Service implements IS3Service {
         phoneNumber: filteredMetadata['phoneNumber'],
         campaignId: filteredMetadata['campaignId'] as CampaignId,
         msgSid: filteredMetadata['msgSid'],
-        scanStatus: filteredMetadata['scanStatus'] as ScanStatus,
+        scanStatus: filteredMetadata['scanStatus'] as FileScanStatus,
       };
 
       const tags: IS3ObjectTags = {
@@ -179,7 +188,7 @@ export class S3Service implements IS3Service {
         phoneNumber: tagsRecord['phoneNumber'],
         campaignId: tagsRecord['campaignId'] as CampaignId,
         msgSid: tagsRecord['msgSid'],
-        scanStatus: tagsRecord['scanStatus'] as ScanStatus,
+        scanStatus: tagsRecord['scanStatus'] as FileScanStatus,
       };
 
       if (!getObjectResponse.Body || !getObjectResponse.ContentType) {
@@ -192,6 +201,8 @@ export class S3Service implements IS3Service {
       }
 
       return {
+        bucket: bucketName,
+        key: key,
         body: getObjectResponse.Body,
         contentType: getObjectResponse.ContentType,
         metadata: metadata,
@@ -226,13 +237,14 @@ export class S3Service implements IS3Service {
 
   /**
    * Moves a file (object) from a source location to a destination location in S3.
+   * @returns url of the object.
    */
   public async moveFile(
     sourceBucket: string,
     sourceKey: string,
     destBucket: string,
     destKey: string,
-  ): Promise<void> {
+  ): Promise<string> {
     console.log(
       `S3Service.moveFile :: Attempting to move s3://${sourceBucket}/${sourceKey} to s3://${destBucket}/${destKey}...`,
     );
@@ -249,10 +261,13 @@ export class S3Service implements IS3Service {
       console.log(
         `S3Service :: Successfully copied to s3://${destBucket}/${destKey} with metadata and tags.`,
       );
+      const url: string = this.constructUrl(destBucket, destKey);
 
       await this.deleteFile(sourceBucket, sourceKey);
-
-      console.log(`S3Service.moveFile :: Move operation completed for ${sourceKey}.`);
+      console.log(
+        `S3Service.moveFile :: Move operation completed for ${sourceKey}. New URL: ${url}`,
+      );
+      return url;
     } catch (error) {
       console.error(
         `S3Service.moveFile :: An error occurred during move operation for ${sourceKey}:`,
@@ -260,5 +275,9 @@ export class S3Service implements IS3Service {
       );
       throw error;
     }
+  }
+
+  public getClient(): S3Client {
+    return this.s3Client;
   }
 }

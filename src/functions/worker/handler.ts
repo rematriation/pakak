@@ -23,8 +23,8 @@ import {
 import { MongooseConnectionService } from '../../infrastructure/mongoose';
 import { CampaignSubmissionRepository } from '../../repositories/CampaignSubmissionRepository';
 import {
-  ICampaignSubmissionRepositoryProviderToken,
-  CampaignSubmissionRepositoryProvider,
+  ISubmissionRepositoryProviderToken,
+  SubmissionRepositoryProvider,
 } from '../../repositories/CampaignSubmissionRepositoryProvider';
 import { IS3ServiceToken, S3Service } from '../../infrastructure/S3Service';
 import { TwilioClient } from '../../infrastructure/twilio';
@@ -52,10 +52,10 @@ container.resolve(CampaignSubmissionRepository);
 container.register(ICampaignLoaderServiceToken, { useClass: CampaignLoaderService });
 container.resolve(CampaignLoaderService);
 
-container.register(ICampaignSubmissionRepositoryProviderToken, {
-  useClass: CampaignSubmissionRepositoryProvider,
+container.register(ISubmissionRepositoryProviderToken, {
+  useClass: SubmissionRepositoryProvider,
 });
-container.resolve(ICampaignSubmissionRepositoryProviderToken);
+container.resolve(ISubmissionRepositoryProviderToken);
 
 container.register(IS3ServiceToken, { useClass: S3Service });
 container.resolve(IS3ServiceToken);
@@ -108,11 +108,7 @@ export const handler = async (event: SQSEvent): Promise<void> => {
           };
         }
         console.info(`Worker Handler :: Pushing reply to outgoing queue :: msg: `, outgoingMsg);
-        await sqsService.sendMessage(
-          appConfig.outgoingSqsQueueUrl,
-          JSON.stringify(outgoingMsg),
-          outgoingMsg.to,
-        );
+        await sqsService.sendMessage(appConfig.outgoingSqsQueueUrl, outgoingMsg, outgoingMsg.to);
       }
     } catch (err: unknown) {
       console.error(
