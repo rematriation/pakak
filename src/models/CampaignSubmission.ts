@@ -16,7 +16,7 @@ import { SubmissionStatus } from '../constants/SubmissionStatus';
 export interface ICampaignSubmission {
   user: IUserProfileDocument['_id'];
   campaign: ICampaignDocument['_id'];
-  status: SubmissionStatus;
+  status?: SubmissionStatus;
   submission_data?: Record<string, string>;
   media_data?: IMedia;
 }
@@ -25,12 +25,12 @@ export interface ICampaignSubmissionDocument extends ICampaignSubmission, Docume
 
 const CampaignSubmissionSchema: Schema = new Schema(
   {
+    user: { type: String, required: true, index: true },
     campaign: { type: String, required: true, index: true },
     status: {
       type: String,
       enum: Object.values(SubmissionStatus),
-      required: true,
-      default: SubmissionStatus.IN_PROGRESS,
+      required: false,
     },
     submission_data: { type: Map, of: Schema.Types.Mixed, default: {} },
     media_data: {

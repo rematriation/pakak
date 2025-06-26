@@ -42,7 +42,7 @@ provider:
 
     # ClamAV stuff
     # Path setting for ClamAV
-    PATH: '/opt/clamav/bin:${PATH}'
+    PATH: '/opt/clamav/bin:$PATH'
     LD_LIBRARY_PATH: '/opt/clamav/lib:${LD_LIBRARY_PATH:-}'
 
     # environment variables for ClamAV referenced in code
@@ -61,7 +61,10 @@ provider:
             - dynamodb:UpdateItem
             - dynamodb:Scan
             - dynamodb:DescribeTable
-          Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}
+            - dynamodb:Query
+          Resource:
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}
+            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/DeletionStatusIndex
 
         - Effect: Allow
           Action: sqs:*
@@ -161,6 +164,7 @@ functions:
 
   cleaner:
     handler: dist/functions/cleaner/handler.handler
+    timeout: 900
     events:
       - schedule: cron(0 12 * * ? *)
 
@@ -177,21 +181,18 @@ resources:
         AttributeDefinitions:
           - AttributeName: phone
             AttributeType: S
-          - AttributeName: awaitingDeletion
+          - AttributeName: deletionStatus
             AttributeType: N
         KeySchema:
           - AttributeName: phone
             KeyType: HASH
         GlobalSecondaryIndexes:
-          - IndexName: DeletionPendingIndex
+          - IndexName: DeletionStatusIndex
             KeySchema:
-              - AttributeName: awaitingDeletion
+              - AttributeName: deletionStatus
                 KeyType: HASH
             Projection:
               ProjectionType: ALL
-        TimeToLiveSpecification:
-          AttributeName: isProcessingMessage
-          Enabled: false
 
     # DLQs
     IncomingDLQ:

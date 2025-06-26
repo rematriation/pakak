@@ -126,7 +126,7 @@ async function createNewUser(phoneNumber: string): Promise<APIGatewayProxyResult
   void userRepository.createUser({
     phone: phoneNumber,
     subscriptionStatus: false,
-    awaitingDeletion: 0,
+    deletionStatus: 0,
     rateLimitCounter: 0,
   });
 

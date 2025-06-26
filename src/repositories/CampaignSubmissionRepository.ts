@@ -6,7 +6,11 @@
 
 import { injectable } from 'tsyringe';
 import { ICampaignSubmissionRepository } from './ICampaignSubmissionRepository';
-import { CampaignSubmissionModel, ICampaignSubmissionDocument } from '../models/CampaignSubmission';
+import {
+  CampaignSubmissionModel,
+  ICampaignSubmission,
+  ICampaignSubmissionDocument,
+} from '../models/CampaignSubmission';
 import { MongoServerError } from 'mongodb';
 import { MONGO_ERROR_CODES } from '../libs/errors/MongoErrorCodes';
 import { IMedia } from '../models/Media';
@@ -133,6 +137,44 @@ export class CampaignSubmissionRepository implements ICampaignSubmissionReposito
     } catch (error) {
       console.error(
         `CampaignSubmissionRepository :: Error adding media to submission ${submissionId}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Retrieves all campaign submission records for a given user.
+   * @param phoneNumber The user's phone number.
+   * @returns A Promise resolving to an array of submission documents.
+   * @throws Error if retrieval fails.
+   */
+  public async getSubmissionsByUser(phoneNumber: string): Promise<ICampaignSubmissionDocument[]> {
+    try {
+      return CampaignSubmissionModel.find({ user: phoneNumber }).exec();
+    } catch (error) {
+      console.error(
+        `CampaignSubmissionRepository :: Error getting submissions for ${phoneNumber}:`,
+        error,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Deletes a campaign submission record by its _id.
+   * @param submissionId The _id of the submission record to delete.
+   * @returns A Promise that resolves with the deleted document, or null if not found.
+   * @throws Error if deletion fails.
+   */
+  public async deleteSubmission(submissionId: string): Promise<ICampaignSubmission | null> {
+    try {
+      const deleted: ICampaignSubmission | null =
+        await CampaignSubmissionModel.findByIdAndDelete(submissionId).exec();
+      return deleted;
+    } catch (error) {
+      console.error(
+        `CampaignSubmissionRepository :: Error deleting submission ${submissionId}:`,
         error,
       );
       throw error;

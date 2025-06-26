@@ -12,6 +12,7 @@ import { ErrorCode } from '../libs/errors/ErrorCode';
 import { AppError } from '../libs/errors/AppError';
 import mongoose from 'mongoose';
 import { ISubmissionRepository } from './ICampaignSubmissionRepository';
+import { CampaignId } from '../constants/CampaignId';
 
 /**
  * Repository for managing UserProfile data in MongoDB Atlas using Mongoose.
@@ -27,7 +28,8 @@ export class UserProfileRepository implements ISubmissionRepository {
   public async getUserProfile(phoneNumber: string): Promise<IUserProfileDocument | null> {
     try {
       // Use findById since _id is the phone number in our schema
-      const userProfile = await UserProfileModel.findById(phoneNumber).exec();
+      const userProfile: IUserProfileDocument | null =
+        await UserProfileModel.findById(phoneNumber).exec();
       return userProfile;
     } catch (error) {
       console.error(
@@ -155,7 +157,7 @@ export class UserProfileRepository implements ISubmissionRepository {
    */
   public async addCampaignId(
     phoneNumber: string,
-    campaignId: string,
+    campaignId: CampaignId,
   ): Promise<IUserProfileDocument | null> {
     try {
       const updatedProfile = await UserProfileModel.findByIdAndUpdate(

@@ -2,6 +2,7 @@ import { ValueType } from 'dynamoose/dist/Schema';
 import dynamoose from '../infrastructure/dynamoose';
 import { ConversationState } from '../constants/ConversationState';
 import { ICampaignContext } from './CampaignContext';
+import { DeletionStatus } from '../constants/DeletionStatus';
 
 /**
  * IUser describes the attribute shape in DynamoDB.
@@ -20,7 +21,7 @@ export interface IUser {
   isProcessingMessage?: number | null;
   rateLimitCounter?: number | null;
   rateLimitWindowExpiresAt?: string;
-  awaitingDeletion: number;
+  deletionStatus: number;
   conversationState?: ConversationState;
   campaignContext?: ICampaignContext;
   createdAt?: string;
@@ -65,13 +66,13 @@ const userSchema = new dynamoose.Schema(
       type: String,
       required: false,
     },
-    awaitingDeletion: {
+    deletionStatus: {
       type: Number,
       required: true,
-      default: 0,
-      validate: (v: ValueType) => {
-        if (typeof v !== 'number') return false;
-        return v === 0 || v === 1;
+      default: DeletionStatus.NOT_REQUESTED,
+      enum: Object.values(DeletionStatus),
+      index: {
+        name: 'DeletionStatusIndex',
       },
     },
     conversationState: {
