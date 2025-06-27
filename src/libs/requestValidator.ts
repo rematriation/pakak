@@ -3,6 +3,7 @@ import { AppError } from './errors/AppError';
 import { ErrorCode } from './errors/ErrorCode';
 import { decodeAndParseBody } from './twilioParser';
 import { IIncomingMessage } from '../models/IncomingMessage';
+import { validateRequest } from 'twilio';
 
 export function validateHttpMethod(
   method: string | undefined | null,
@@ -75,4 +76,15 @@ export function validatePhoneNumber(phoneNumber: string): void {
       'Invalid phone number format. Must be in E.164 format (e.g., +15551234567).',
     );
   }
+}
+
+export function validateWebhookRequest(event: APIGatewayProxyEvent, authToken: string): boolean {
+  const rawBody = event.isBase64Encoded
+    ? Buffer.from(event.body!, 'base64').toString()
+    : event.body || '';
+  const url = `https://${event.headers['Host']}${event.requestContext.path}`;
+  const params = Object.fromEntries(new URLSearchParams(rawBody));
+  const twilioHeader = event.headers['X-Twilio-Signature'] || '';
+
+  return validateRequest(authToken, twilioHeader, url, params);
 }

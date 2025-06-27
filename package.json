@@ -21,6 +21,7 @@
     "dynamoose": "^4.0.4",
     "mongodb": "^6.16.0",
     "mongoose": "^8.15.1",
+    "no-profanity": "^1.5.1",
     "pino": "^9.7.0",
     "pino-pretty": "^13.0.0",
     "reflect-metadata": "^0.2.2",
@@ -32,7 +33,7 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.149",
     "@types/jest": "^29.5.14",
-    "@types/node": "^20.4.2",
+    "@types/node": "^20.19.1",
     "@types/pino": "^7.0.4",
     "@typescript-eslint/eslint-plugin": "^8.33.0",
     "@typescript-eslint/parser": "^8.33.0",

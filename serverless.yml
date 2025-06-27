@@ -8,7 +8,7 @@ frameworkVersion: '3'
 # ───────── Global defaults & per-stage naming ─────────
 provider:
   name: aws
-  runtime: nodejs18.x
+  runtime: nodejs20.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
   stackName: pakak-${self:provider.stage}
@@ -49,14 +49,19 @@ provider:
 
     # ClamAV stuff
     # Path setting for ClamAV
-    PATH: '/opt/clamav/bin:$PATH'
-    LD_LIBRARY_PATH: '/opt/clamav/lib:${LD_LIBRARY_PATH:-}'
+    # PATH: '/opt/clamav/bin:$PATH'
+    # LD_LIBRARY_PATH: '/opt/clamav/lib:${LD_LIBRARY_PATH:-}'
 
     # environment variables for ClamAV referenced in code
     CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
     CLAMAV_DB_PATH: /tmp/clamav
 
     BIN_DIR: /opt/clamav/bin
+
+    # Rate limit fields
+    TTL_FOR_PROCESSING_LOCK: ${ssm:/pakak/${self:provider.stage}/TTL_FOR_PROCESSING_LOCK}
+    MAX_MESSAGES_PER_WINDOW: ${ssm:/pakak/${self:provider.stage}/MAX_MESSAGES_PER_WINDOW}
+    RATE_LIMIT_WINDOW_SECONDS: ${ssm:/pakak/${self:provider.stage}/RATE_LIMIT_WINDOW_SECONDS}
 
   iam:
     role:
@@ -174,7 +179,7 @@ functions:
       - sqs:
           arn: { 'Fn::GetAtt': [OutgoingQueue, Arn] }
           batchSize: 1
-          maximumConcurrency: 2
+          maximumConcurrency: 4
 
   cleaner:
     handler: dist/functions/cleaner/handler.handler

@@ -139,6 +139,7 @@ export class WorkerService {
         stepId = result.nextStepId || '';
       } else {
         responseStrs.push(questionStep.fallbackMessage || RESPONSE.GENERIC_FALLBACK_MESSAGE);
+        responseStrs.push(questionStep.prompt);
       }
     }
 

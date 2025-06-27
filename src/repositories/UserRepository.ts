@@ -182,4 +182,36 @@ export class UserRepository {
       throw error;
     }
   }
+
+  public async incrementRateLimitCounter(phone: string): Promise<void> {
+    await UserModel.update({ phone }, { $ADD: { rateLimitCounter: 1 } });
+  }
+
+  /**
+   * Resets the user's rate limit counter to 1 and sets a new expiration timestamp (number) for the window.
+   * This is called when the previous rate limit window has expired.
+   *
+   * @param phone The user's phone number.
+   * @param expiresAt The Unix timestamp (in seconds, as a number) when the new window expires.
+   * @returns A Promise that resolves when the update is complete.
+   * @throws Error if the update fails.
+   */
+  public async resetRateLimit(phone: string, expiresAt: number): Promise<void> {
+    try {
+      await UserModel.update(
+        { phone },
+        {
+          rateLimitCounter: 1,
+          rateLimitWindowExpiresAt: expiresAt,
+        },
+      );
+      const expiresAtDate: Date = new Date(expiresAt * 1000);
+      console.log(
+        `UserRepository :: Rate limit reset for ${phone}. Counter: 1, Expires: ${expiresAtDate.toUTCString()}.`,
+      );
+    } catch (error) {
+      console.error(`UserRepository :: Error resetting rate limit for ${phone}:`, error);
+      throw error;
+    }
+  }
 }

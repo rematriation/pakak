@@ -11,15 +11,18 @@ import {
   validateHttpMethod,
   parseAndValidatePostBody,
   validatePhoneNumber,
+  validateWebhookRequest,
 } from '../../libs/requestValidator';
 import { twilioResponse } from '../../libs/responseHelpers';
 import { SQSService, ISQSServiceToken } from '../../infrastructure/SQSService';
-import { AppConfig, IAppConfigToken } from '../../configs/AppConfig';
+import { AppConfig, IAppConfig, IAppConfigToken } from '../../configs/AppConfig';
 import { IIncomingMessage } from '../../models/IncomingMessage';
 
-container.register(IAppConfigToken, { useClass: AppConfig });
+container.registerSingleton(IAppConfigToken, AppConfig);
+const appConfig: IAppConfig = container.resolve(IAppConfigToken);
 const userRepository: UserRepository = container.resolve(UserRepository);
-container.register(ISQSServiceToken, { useClass: SQSService });
+container.registerSingleton(ISQSServiceToken, SQSService);
+container.resolve(SQSService);
 
 const firewallService: FirewallService = container.resolve(FirewallService);
 
@@ -50,6 +53,10 @@ async function handleGet(): Promise<APIGatewayProxyResult> {
 }
 
 async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
+  if (!validateWebhookRequest(event, appConfig.twilioAuthToken)) {
+    return { statusCode: 403, body: 'forbidden' };
+  }
+
   let phoneNumber: string | null = null;
   let lockAcquired: boolean = false;
   let errorRaised: boolean = false;
@@ -64,6 +71,11 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
 
     if (!user) {
       return createNewUser(phoneNumber);
+    }
+
+    const rateLimited: APIGatewayProxyResult | null = await firewallService.isRateLimited(user);
+    if (rateLimited) {
+      return rateLimited;
     }
 
     lockAcquired = await userRepository.acquireProcessingLock(phoneNumber, TTL_FOR_PROCESSING_LOCK);

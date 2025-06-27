@@ -20,7 +20,7 @@ export interface IUser {
   subscriptionStatus: boolean;
   isProcessingMessage?: number | null;
   rateLimitCounter?: number | null;
-  rateLimitWindowExpiresAt?: string;
+  rateLimitWindowExpiresAt?: number | null;
   deletionStatus: number;
   conversationState?: ConversationState;
   campaignContext?: ICampaignContext;
@@ -63,8 +63,12 @@ const userSchema = new dynamoose.Schema(
       },
     },
     rateLimitWindowExpiresAt: {
-      type: String,
+      type: Number,
       required: false,
+      validate: (v: ValueType) => {
+        if (typeof v !== 'number') return false;
+        return v >= 0;
+      },
     },
     deletionStatus: {
       type: Number,

@@ -5,7 +5,7 @@ export const TWI_ML_RESPONSE = {
     '<Response><Message>You have been unsubscribed. Reply START to resubscribe.</Message></Response>',
   ),
   RATE_LIMIT_EXCEEDED: asTwimlXmlString(
-    '<Response><Message>Too many requests. Please slow down.</Message></Response>',
+    '<Response><Message>Too many requests. Please slow down. You can send messages again after {{RETURN_TIME}}.</Message></Response>',
   ),
   GENERIC_ERROR: asTwimlXmlString(
     '<Response><Message>An unexpected error occurred. Please try again later.</Message></Response>',
@@ -60,6 +60,9 @@ export const TWI_ML_RESPONSE = {
   ),
   TRY_AGAIN_NEXT_DAY_AFTER_DELETION: asTwimlXmlString(
     '<Response><Message>You have requested data deletion and have been unsubscribed. Please try to resubscribe again tomorrow.</Message></Response>',
+  ),
+  GENERIC_FALLBACK_MESSAGE: asTwimlXmlString(
+    "<Response><Message>I'm sorry, I didn't understand that.</Message></Response>",
   ),
 };
 
