@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
-    "target": "ES2020", // modern runtime
+    "target": "ES2022", // modern runtime
     "module": "nodenext", // for Node.js / Serverless
-    "lib": ["ES2020"], // available globals
+    "lib": ["ES2022"], // available globals
     "outDir": "dist", // compiled output
     "rootDir": "src", // source files
     "strict": true, // all strict mode checks

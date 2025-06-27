@@ -36,6 +36,9 @@ export interface IAppConfig {
   clamavDBS3Bucket: string;
   clamavDBPath: string;
   binDir: string;
+  ttlForProcessingLock: number;
+  maxMessagesPerWindow: number;
+  rateLimitWindowSeconds: number;
 }
 
 /**
@@ -71,6 +74,9 @@ export class AppConfig implements IAppConfig {
   public readonly clamavDBS3Bucket: string;
   public readonly clamavDBPath: string;
   public readonly binDir: string;
+  public readonly ttlForProcessingLock: number;
+  public readonly maxMessagesPerWindow: number;
+  public readonly rateLimitWindowSeconds: number;
 
   constructor() {
     this.appStage = this.getRequiredEnv('APP_STAGE');
@@ -95,6 +101,9 @@ export class AppConfig implements IAppConfig {
     this.clamavDBS3Bucket = this.getRequiredEnv('CLAMAV_DB_S3_BUCKET');
     this.clamavDBPath = this.getRequiredEnv('CLAMAV_DB_PATH');
     this.binDir = this.getRequiredEnv('BIN_DIR');
+    this.ttlForProcessingLock = parseInt(this.getRequiredEnv('TTL_FOR_PROCESSING_LOCK'));
+    this.maxMessagesPerWindow = parseInt(this.getRequiredEnv('MAX_MESSAGES_PER_WINDOW'));
+    this.rateLimitWindowSeconds = parseInt(this.getRequiredEnv('RATE_LIMIT_WINDOW_SECONDS'));
   }
 
   /**

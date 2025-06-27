@@ -10,6 +10,8 @@ import { ISQSService, ISQSServiceToken } from '../infrastructure/SQSService';
 import { IAppConfig, IAppConfigToken } from '../configs/AppConfig';
 import { IIncomingMessage } from '../models/IncomingMessage';
 import { DeletionStatus } from '../constants/DeletionStatus';
+import { asTwimlXmlString, TwimlXmlString } from '../libs/types';
+import Profanity from 'no-profanity';
 
 @injectable()
 export class FirewallService {
@@ -26,6 +28,9 @@ export class FirewallService {
   ): Promise<APIGatewayProxyResult> {
     const msgBody = sanitizeTxtMessage(incomingMsg.messageText);
     incomingMsg.messageText = msgBody;
+    if (Profanity.isProfane(incomingMsg.messageText)) {
+      return this.#handleProfanity(phoneNumber);
+    }
     const cmd: Command | null = extractCommandKeyword(msgBody);
 
     if (user.deletionStatus) {
@@ -61,6 +66,12 @@ export class FirewallService {
     console.debug(`FirewallService :: User ${phoneNumber} is awaiting deletion and unsubscribed.`);
     await this.userRepository.releaseProcessingLock(phoneNumber);
     return twilioResponse(TWI_ML_RESPONSE.TRY_AGAIN_NEXT_DAY_AFTER_DELETION);
+  }
+
+  async #handleProfanity(phoneNumber: string): Promise<APIGatewayProxyResult> {
+    console.debug(`FirewallService :: User ${phoneNumber} is sent profanity.`);
+    await this.userRepository.releaseProcessingLock(phoneNumber);
+    return twilioResponse(TWI_ML_RESPONSE.GENERIC_FALLBACK_MESSAGE);
   }
 
   async #unsubscribeUser(phoneNumber: string): Promise<APIGatewayProxyResult> {
@@ -130,5 +141,58 @@ export class FirewallService {
     }
 
     return response;
+  }
+
+  /**
+   * Enforce rate limits for a user.
+   * @param phoneNumber The user's phone number.
+   * @param user The user's DynamoDB profile (containing rate limit counters).
+   * @returns A Promise resolving to APIGatewayProxyResult if rate-limited, otherwise null.
+   */
+  public async isRateLimited(user: IUser): Promise<APIGatewayProxyResult | null> {
+    const now = Math.floor(Date.now() / 1000);
+    let currentCounter = user.rateLimitCounter || 0;
+    const windowExpiresAt = user.rateLimitWindowExpiresAt ?? 0;
+
+    if (windowExpiresAt === 0 || now >= windowExpiresAt) {
+      const newWindowExpiresAt = now + this.appConfig.rateLimitWindowSeconds;
+      await this.userRepository.resetRateLimit(user.phone, newWindowExpiresAt);
+      currentCounter = 1;
+      console.log(
+        `FirewallService. :: Rate limit window reset for ${user.phone}. New expiry: ${new Date(newWindowExpiresAt * 1000).toUTCString()}.`,
+      );
+    } else {
+      await this.userRepository.incrementRateLimitCounter(user.phone);
+      currentCounter++;
+      console.log(
+        `FirewallService.isRateLimited :: Rate limit counter for ${user.phone}: ${currentCounter}. Expires: ${new Date(windowExpiresAt * 1000).toUTCString()}.`,
+      );
+    }
+
+    if (currentCounter > this.appConfig.maxMessagesPerWindow) {
+      console.warn(
+        `FirewallService :: User ${user.phone} exceeded rate limit (${currentCounter}/${this.appConfig.maxMessagesPerWindow}). Blocking message.`,
+      );
+
+      const remainingSeconds = windowExpiresAt - now;
+      let returnTimeString: string;
+
+      if (remainingSeconds <= 0) {
+        returnTimeString = 'a moment';
+      } else if (remainingSeconds < 60) {
+        returnTimeString = `${remainingSeconds} second${remainingSeconds === 1 ? '' : 's'}`;
+      } else {
+        const minutes = Math.ceil(remainingSeconds / 60);
+        returnTimeString = `${minutes} minute${minutes === 1 ? '' : 's'}`;
+      }
+
+      const rateLimitMessage: TwimlXmlString = asTwimlXmlString(
+        TWI_ML_RESPONSE.RATE_LIMIT_EXCEEDED.replace('{{RETURN_TIME}}', returnTimeString),
+      );
+
+      return twilioResponse(rateLimitMessage);
+    }
+
+    return null;
   }
 }
