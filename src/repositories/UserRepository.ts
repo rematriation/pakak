@@ -29,7 +29,14 @@ export class UserRepository {
   }
 
   async setSubscription(phone: string, optIn: boolean): Promise<void> {
-    await UserModel.update({ phone }, { subscriptionStatus: optIn, isProcessingMessage: 0 });
+    await UserModel.update(
+      { phone },
+      {
+        subscriptionStatus: optIn,
+        isProcessingMessage: 0,
+        conversationState: ConversationState.IDLE,
+      },
+    );
   }
 
   async setDeletionStatus(phone: string, flag: DeletionStatus): Promise<void> {

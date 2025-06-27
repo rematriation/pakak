@@ -17,7 +17,7 @@ export const TWI_ML_RESPONSE = {
     '<Response><Message>Please wait a moment...</Message></Response>',
   ),
   WELCOME_MESSAGE: asTwimlXmlString(
-    '<Response><Message>Hi from us at Aqqaluk Trust! Welcome to our special Sivu Summer archiving activity.\nReply "START" to subscribe, continue receiving msgs from us, and complete the Sivu Summer activity.\nMsg &amp; data rates may apply. Reply STOP to unsubscribe at anytime.</Message></Response>',
+    "<Response><Message>Hi from Aqqaluk Trust.\nWelcome to our Sivu Summer archiving activity with our app called Pakak.\nReply START to agree to receive about 8-10 messages from Aqqaluk Trust for each submission.\nReview Pakak's Terms of Services (www.aqqaluktrust.com/pakak-tos/) and Privacy Policy (www.aqqaluktrust.com/pakak-privacy/). Msg &amp; data rates may apply.\nReply STOP to opt-out.</Message></Response>",
   ),
   THANK_YOU: asTwimlXmlString(
     '<Response><Message>Thank you for your submission!</Message></Response>',
@@ -25,13 +25,7 @@ export const TWI_ML_RESPONSE = {
   SUBSCRIPTION_CONFIRMATION: asTwimlXmlString(
     `<Response>
       <Message>
-        Aqqaluk Trust: Taikuu! You've opted into receiving and submitting msgs. Msg &amp; data rates may apply. Reply STOP to unsubscribe.
-      </Message>
-      <Message>
-        <Media>
-          ${process.env.STATIC_ASSETS_BASE_URL}/images/${process.env.INUPIAT_VALUES_IMAGE_NAME}
-        </Media>
-        Save this image of the Inupiat Ilitqusiat to your phone. It will come in handy later! Reply STOP to unsubscribe.
+        Aqqaluk Trust: Taikuu! You've opted into receiving and submitting msgs. Reply INU to get the image of Inupiat Ilitqusiat to your phone. Msg &amp; data rates may apply. Reply STOP to unsubscribe.
       </Message>
     </Response>`,
   ),
