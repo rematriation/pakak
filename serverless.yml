@@ -49,8 +49,8 @@ provider:
 
     # ClamAV stuff
     # Path setting for ClamAV
-    # PATH: '/opt/clamav/bin:$PATH'
-    # LD_LIBRARY_PATH: '/opt/clamav/lib:${LD_LIBRARY_PATH:-}'
+    PATH: '/opt/clamav/bin:$PATH'
+    LD_LIBRARY_PATH: '$LD_LIBRARY_PATH:/opt/clamav/lib'
 
     # environment variables for ClamAV referenced in code
     CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
@@ -107,7 +107,7 @@ provider:
 
         - Effect: Allow
           Action: lambda:GetLayerVersion
-          Resource: arn:aws:lambda:us-east-1:698528537338:layer:clamav-prod:6
+          Resource: ***REMOVED***
 
         # - Effect: Allow
         #   Action:
@@ -164,7 +164,7 @@ functions:
           bucket: pakak-${self:provider.stage}-raw
           event: s3:ObjectCreated:*
     layers:
-      - arn:aws:lambda:us-east-1:698528537338:layer:clamav-prod:6
+      - ***REMOVED***
     onError:
       Fn::GetAtt: [ScannerDLQ, Arn]
     environment:

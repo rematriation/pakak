@@ -48,6 +48,7 @@ export class MediaInputHandler implements IInputHandler {
       return {
         status: false,
         nextStepId: undefined,
+        flowId: step.runFlow ? (step.runFlow as CampaignId) : campaignId,
       };
     }
     const idx = mediaContentTypes.findIndex((contentType) =>
@@ -60,6 +61,7 @@ export class MediaInputHandler implements IInputHandler {
       return {
         status: false,
         nextStepId: undefined,
+        flowId: campaignId,
       };
     }
     try {
@@ -95,6 +97,7 @@ export class MediaInputHandler implements IInputHandler {
     return {
       status: true,
       nextStepId: step.nextStepId,
+      flowId: step.runFlow ? (step.runFlow as CampaignId) : campaignId,
     };
   }
 

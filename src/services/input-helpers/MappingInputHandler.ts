@@ -6,6 +6,7 @@
 import { IInputHandlerContext, IInputHandlerResult, IInputHandler } from './InputHandler';
 import { ISubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
 import { ISubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
+import { CampaignId } from '../../constants/CampaignId';
 
 export class MappingInputHandler implements IInputHandler {
   constructor(private repositoryProvider: ISubmissionRepositoryProvider) {}
@@ -28,6 +29,7 @@ export class MappingInputHandler implements IInputHandler {
         return {
           status: true,
           nextStepId: step.nextStepId,
+          flowId: step.runFlow ? (step.runFlow as CampaignId) : campaignId,
         } as IInputHandlerResult;
       } else {
         console.error(
@@ -42,6 +44,7 @@ export class MappingInputHandler implements IInputHandler {
     return {
       status: false,
       nextStepId: undefined,
+      flowId: campaignId,
     };
   }
 }

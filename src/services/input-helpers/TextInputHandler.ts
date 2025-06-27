@@ -3,6 +3,7 @@
  * @email daksh204singh@gmail.com
  * @desc Text response handler. Includes numbers as well.
  */
+import { CampaignId } from '../../constants/CampaignId';
 import { validateWithRegex } from '../../libs/messageHelper';
 import { ISubmissionRepositoryProvider } from '../../repositories/CampaignSubmissionRepositoryProvider';
 import { ISubmissionRepository } from '../../repositories/ICampaignSubmissionRepository';
@@ -31,6 +32,7 @@ export class TextInputHandler implements IInputHandler {
         return {
           status: true,
           nextStepId: questionStep.nextStepId,
+          flowId: questionStep.runFlow ? (questionStep.runFlow as CampaignId) : campaignId,
         };
       } else {
         console.error(
@@ -44,6 +46,7 @@ export class TextInputHandler implements IInputHandler {
     return {
       status: false,
       nextStepId: undefined,
+      flowId: campaignId,
     };
   }
 }

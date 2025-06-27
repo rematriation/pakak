@@ -132,6 +132,7 @@ export class WorkerService {
         conversationStateChange = true;
         responseStrs.push(RESPONSE.GENERIC_ACK);
         if (result.nextStepId) {
+          flowId = result.flowId;
           questionStep = await this.campaignLoaderService.getQuestionStep(
             flowId,
             result.nextStepId,
@@ -148,8 +149,10 @@ export class WorkerService {
     if (questionStep.runFlow) {
       // jump to the flow referenced.
       flowId = questionStep.runFlow as CampaignId;
-      questionStep = (await this.campaignLoaderService.getCampaignDefinition(flowId)).steps[0];
-      stepId = questionStep.stepId;
+      stepId = questionStep.nextStepId
+        ? questionStep.nextStepId
+        : (await this.campaignLoaderService.getCampaignDefinition(flowId)).steps[0].stepId;
+      questionStep = await this.campaignLoaderService.getQuestionStep(flowId, stepId);
       responseStrs.push(questionStep.prompt);
 
       // create a submission entry since we're running a new campaign/flow which would need its own submission entry.

@@ -190,6 +190,7 @@ export class FirewallService {
         TWI_ML_RESPONSE.RATE_LIMIT_EXCEEDED.replace('{{RETURN_TIME}}', returnTimeString),
       );
 
+      await this.userRepository.setConversationStateIDLE(user.phone);
       return twilioResponse(rateLimitMessage);
     }
 
