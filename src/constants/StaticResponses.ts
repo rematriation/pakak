@@ -37,7 +37,7 @@ export const TWI_ML_RESPONSE = {
   ),
   EMPTY_MESSAGE: asTwimlXmlString('<Response></Response>'),
   HELP_MESSAGE: asTwimlXmlString(
-    '<Response><Message>Aqqaluk Trust: Reply STOP to unsubscribe,\nSTART to subscribe,\nINU for Inupiat Ilitqusiat values, or\nHELP to see these options again.</Message></Response>',
+    '<Response><Message>Aqqaluk Trust: Reply STOP to unsubscribe,\nSTART to subscribe,\nINU for Inupiat Ilitqusiat values, or\nHELP to see these options again.\n PROMPT to retrieve last question.</Message></Response>',
   ),
   INUPIAT_VALUES_MESSAGE: asTwimlXmlString(
     `<Response>

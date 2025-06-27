@@ -61,7 +61,7 @@ export class WorkerService {
       }
     }
     const user: IUser = (await this.userRepository.getUser(incomingMessage.phoneNumber)) as IUser;
-    if (keyword === Command.START) {
+    if (keyword) {
       user.conversationState = ConversationState.IDLE;
     }
 
