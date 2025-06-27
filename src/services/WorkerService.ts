@@ -48,11 +48,9 @@ export class WorkerService {
 
   async processMessage(incomingMessage: IIncomingMessage): Promise<IOutgoingMessage> {
     console.debug(`WorkerService :: processing messaage :: `, incomingMessage);
+    const keyword: Command | null = extractCommandKeyword(incomingMessage.messageText || '');
     // check if user profile has to be created
-    if (
-      incomingMessage.messageText &&
-      extractCommandKeyword(incomingMessage.messageText) === Command.START
-    ) {
+    if (keyword === Command.START) {
       const userProfile: IUserProfileDocument | null =
         await this.userProfileRepository.getUserProfile(incomingMessage.phoneNumber);
       if (!userProfile) {
@@ -63,6 +61,10 @@ export class WorkerService {
       }
     }
     const user: IUser = (await this.userRepository.getUser(incomingMessage.phoneNumber)) as IUser;
+    if (keyword === Command.START) {
+      user.conversationState = ConversationState.IDLE;
+    }
+
     return await this.#campaignRunner(
       incomingMessage,
       user.conversationState as ConversationState,
