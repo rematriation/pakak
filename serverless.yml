@@ -172,7 +172,6 @@ functions:
       - sqs:
           arn: { 'Fn::GetAtt': [OutgoingQueue, Arn] }
           batchSize: 1
-          maximumConcurrency: 4
 
   cleaner:
     handler: dist/functions/cleaner/handler.handler
