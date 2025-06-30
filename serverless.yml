@@ -31,6 +31,7 @@ provider:
     MONGODB_DBNAME: pakak_${self:provider.stage}
 
     TWILIO_NUMBER: ${ssm:/pakak/${self:provider.stage}/TWILIO_NUMBER}
+    TWILIO_MESSAGING_SERVICE_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_MESSAGING_SERVICE_SID}
     TWILIO_ACCOUNT_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_SID}
     TWILIO_AUTH_TOKEN: ${ssm:/pakak/${self:provider.stage}/TWILIO_TOKEN}
 
