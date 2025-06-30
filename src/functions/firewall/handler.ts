@@ -20,13 +20,15 @@ import { IIncomingMessage } from '../../models/IncomingMessage';
 
 container.registerSingleton(IAppConfigToken, AppConfig);
 const appConfig: IAppConfig = container.resolve(IAppConfigToken);
+
+container.registerSingleton(UserRepository);
 const userRepository: UserRepository = container.resolve(UserRepository);
+
 container.registerSingleton(ISQSServiceToken, SQSService);
 container.resolve(SQSService);
 
+container.registerSingleton(FirewallService);
 const firewallService: FirewallService = container.resolve(FirewallService);
-
-const TTL_FOR_PROCESSING_LOCK = 60;
 
 export const handler: APIGatewayProxyHandler = async (
   event: APIGatewayProxyEvent,
@@ -78,7 +80,10 @@ async function handlePost(event: APIGatewayProxyEvent): Promise<APIGatewayProxyR
       return rateLimited;
     }
 
-    lockAcquired = await userRepository.acquireProcessingLock(phoneNumber, TTL_FOR_PROCESSING_LOCK);
+    lockAcquired = await userRepository.acquireProcessingLock(
+      phoneNumber,
+      appConfig.ttlForProcessingLock,
+    );
     if (!lockAcquired) {
       console.info(`Firewall Handler :: Concurrent request for ${phoneNumber}. Lock already held.`);
       return Promise.resolve({

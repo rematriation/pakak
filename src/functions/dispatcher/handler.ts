@@ -13,15 +13,15 @@ import { IOutgoingMessage } from '../../models/OutgoingMessage';
 import { DispatcherService } from '../../services/DispatcherService';
 import { TwilioClient } from '../../infrastructure/twilio';
 
-container.register(IAppConfigToken, { useClass: AppConfig });
+container.registerSingleton(IAppConfigToken, AppConfig);
 
-container.register(UserRepository, { useClass: UserRepository });
+container.registerSingleton(UserRepository);
 container.resolve(UserRepository);
 
-container.register(DispatcherService, { useClass: DispatcherService });
+container.registerSingleton(DispatcherService);
 const dispatcherService: DispatcherService = container.resolve(DispatcherService);
 
-container.register(TwilioClient, { useClass: TwilioClient });
+container.registerSingleton(TwilioClient, TwilioClient);
 container.resolve(TwilioClient);
 
 export const handler = async (event: SQSEvent): Promise<void> => {
