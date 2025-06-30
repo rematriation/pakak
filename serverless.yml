@@ -324,6 +324,22 @@ resources:
           - CidrIp: 0.0.0.0/0
             IpProtocol: -1
 
+    S3GatewayEndpoint:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        VpcId: !Ref VPC
+        ServiceName: !Sub 'com.amazonaws.${self:provider.region}.s3'
+        RouteTableIds:
+          - !Ref PrivateRouteTable
+
+    DynamoDBGatewayEndpoint:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        VpcId: !Ref VPC
+        ServiceName: !Sub 'com.amazonaws.${self:provider.region}.dynamodb'
+        RouteTableIds:
+          - !Ref PrivateRouteTable
+
     # DynamoDB
     UsersTable:
       Type: AWS::DynamoDB::Table
