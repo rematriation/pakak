@@ -69,7 +69,7 @@
       },
       {
         "stepId": "ask_for_picture_again",
-        "prompt": "If you'd like add more pictures, you can go Pakak again. Find another picture you want to submit, take a picture and send it to us.",
+        "prompt": "If you'd like to add more pictures, you can go Pakak again. Find another picture you want to submit, take a picture and send it to us.",
         "expectedResponseType": "IMAGE",
         "validationRegex": "^image\/(jpeg|jpg|gif|png|heic|heif|tiff|bmp)$",
         "nextStepId": "ask_knows_time",
