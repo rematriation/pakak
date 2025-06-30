@@ -107,14 +107,7 @@ provider:
 
         - Effect: Allow
           Action: lambda:GetLayerVersion
-          Resource: ***REMOVED***
-
-        # - Effect: Allow
-        #   Action:
-        #     - logs:CreateLogGroup
-        #     - logs:CreateLogStream
-        #     - logs:PutLogEvents
-        #   Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/pakak-${self:provider.stage}-*:*
+          Resource: ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
 
 plugins:
   - serverless-localstack
@@ -164,7 +157,7 @@ functions:
           bucket: pakak-${self:provider.stage}-raw
           event: s3:ObjectCreated:*
     layers:
-      - ***REMOVED***
+      - ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
     onError:
       Fn::GetAtt: [ScannerDLQ, Arn]
     environment:
