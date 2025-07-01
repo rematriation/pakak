@@ -14,7 +14,7 @@
         "validationRegex": "^[A-Za-z\\s.'-]+$",
         "nextStepId": "ask_village",
         "fieldName": "name",
-        "fallbackMessage": "That doesn't look like a valid name. Please tell me your full name (letters, spaces, periods, hyphens, and apostrophes allowed)."
+        "fallbackMessage": "Oops. Be sure to include more than just your first name."
       },
       {
         "stepId": "ask_village",
@@ -23,7 +23,7 @@
         "validationRegex": "^[A-Za-z\\s.'-]+$",
         "nextStepId": "ask_zipcode",
         "fieldName": "village",
-        "fallbackMessage": "I didn't get a valid village name. Please tell me which village you're from (letters, spaces, periods, hyphens, and apostrophes allowed)."
+        "fallbackMessage": "I didn't get a valid village name. Please tell me which village you're from."
       },
       {
         "stepId": "ask_zipcode",
@@ -32,11 +32,11 @@
         "validationRegex": "^\\d{5}$",
         "nextStepId": "complete_profile_flow",
         "fieldName": "zipCode",
-        "fallbackMessage": "That's not a valid 5-digit zip code. Please enter only 5 digits (e.g., 90210)."
+        "fallbackMessage": "Oops. We didn't get a valid 5-digit zip code. Please enter only 5 digits. For example, Buckland is 99727"
       },
       {
         "stepId": "complete_profile_flow",
-        "prompt": "Great! Your profile is now updated.",
+        "prompt": "Taikuu! Your profile is now updated.",
         "expectedResponseType": "NONE",
         "runFlow": "image_archive_campaign"
       }
@@ -52,19 +52,19 @@
   {
     "_id": "image_archive_campaign",
     "name": "Image Archive Campaign",
-    "description": "This campaign prompts users who submit a picture to provide the time and location for archiving purposes. ",
+    "description": "Prompts users who submit a picture to provide the time and location for archiving purposes.",
     "initialMessage": "Thanks for submitting a picture for the archive! To help us catalog it, we have a couple of questions.",
     "fallbackMessage": "I'm sorry, I didn't understand that. Please provide a valid answer for the current question.",
-    "timeoutMessage": "It seems you're busy. The archiving session has ended. You can start a new one anytime by sending another picture.",
+    "timeoutMessage": "It seems you're busy. We ended this archiving session for you. You can restart a new one anytime by sending another picture.",
     "steps": [
       {
         "stepId": "ask_for_picture",
-        "prompt": "Go Pakak! Find the picture you want to submit, take a picture and send it to us.",
+        "prompt": "Go Pakak! Find the picture you want to archive, take a picture of it, and send it to us.",
         "expectedResponseType": "IMAGE",
         "validationRegex": "^image\/(jpeg|jpg|gif|png|heic|heif|tiff|bmp)$",
         "nextStepId": "ask_knows_time",
         "fieldName": "image_url",
-        "fallbackMessage": "That doesn't look like a picture. Go Pakak! Find the picture you want to submit, take a picture and send it to us."
+        "fallbackMessage": "That doesn't look like a picture. Go Pakak! Find the picture, take a picture of it, and send it to us."
       },
       {
         "stepId": "ask_knows_time",
@@ -84,7 +84,7 @@
       },
       {
         "stepId": "ask_time",
-        "prompt": "About what year or decade was the original picture taken? Reply with 4 numbers like '1990' or '2002'. If you're not sure, ask an adult. Msg & data rates may apply. Reply STOP to opt-out.",
+        "prompt": "About what decade was the original picture taken? Reply with 4 numbers like 1990 or 2002. If you're not sure, ask an adult. Msg & data rates may apply. Reply STOP to opt-out.",
         "expectedResponseType": "TEXT",
         "validationRegex": "^\\s*([12]\\d{3})\\.?\\s*$",
         "nextStepId": "ask_knows_location",
@@ -114,7 +114,7 @@
         "validationRegex": "^[\\w\\s-,'.&#()]+$",
         "nextStepId": "confirm_location_in_alaska",
         "fieldName": "picture_location",
-        "fallbackMessage": "I'm sorry, that doesn't look like a valid location. Please reply with the name of the location, such as a village, landmark, or river."
+        "fallbackMessage": "Oops. Try again. Please reply with the name of the location, such as a village, landmark, or river."
       },
       {
         "stepId": "confirm_location_in_alaska",
@@ -146,7 +146,7 @@
       },
       {
         "stepId": "ask_value",
-        "prompt": "Last question. What Iñupiat Iḷitqusiat best describes this picture for you? Reply with the number for your choice:\n\n**RESPECT**\n1. Respect for Elders\n2. Respect for Nature\n3. Respect for Others\n\n**GLOBAL**\n4. Cooperation\n5. Sharing\n6. Avoid Conflict\n\n**PERSONAL**\n7. Humility\n8. Humor\n9. Hard Work\n10. Spirtuality\n\n**TRIBAL**\n11. Responsibility to Tribe\n12. Love for Children\n13. Domestic Skills\n14. Family Roles\n\n**KNOWLEDGE**\n15. Knowledge of Language\n16. Knowledge of Family Tree\n17. Hunter Success",
+        "prompt": "Last question. What Iñupiat Iḷitqusiat describes this picture for you? Reply 1-17 for your choice:\n\nRESPECT\n1 Respect for Elders\n2 Respect for Nature\n3 Respect for Others\n\nGLOBAL\n4 Cooperation\n5 Sharing\n6 Avoid Conflict\n\nPERSONAL\n7 Humility\n8 Humor\n9 Hard Work\n10 Spirtuality\n\nTRIBAL\n11 Responsibility to Tribe\n12 Love for Children\n13 Domestic Skills\n14 Family Roles\n\nKNOWLEDGE\n15 Knowledge of Language\n16 Knowledge of Family Tree\n17 Hunter Success",
         "expectedResponseType": "MAPPING",
         "mapping": {
           "1": "Respect for Elders",
@@ -170,11 +170,11 @@
         "validationRegex": "^\\s*([1-9]|1[0-7])\\s*$",
         "nextStepId": "complete_archive_flow",
         "fieldName": "inupiat_value",
-        "fallbackMessage": "That's not a valid choice. Please reply with a number from 1 to 17 from the list below:\n\n**RESPECT**\n1. Respect for Elders\n2. Respect for Nature\n3. Respect for Others\n\n**GLOBAL**\n4. Cooperation\n5. Sharing\n6. Avoid Conflict\n\n**PERSONAL**\n7. Humility\n8. Humor\n9. Hard Work\n10. Spirtuality\n\n**TRIBAL**\n11. Responsibility to Tribe\n12. Love for Children\n13. Domestic Skills\n14. Family Roles\n\n**KNOWLEDGE**\n15. Knowledge of Language\n16. Knowledge of Family Tree\n17. Hunter Success"
+        "fallbackMessage": "Oops. Try again. Reply with one number between 1-17 from the list below:\n\nRESPECT\n1 Respect for Elders\n2 Respect for Nature\n3 Respect for Others\n\nGLOBAL\n4 Cooperation\n5 Sharing\n6 Avoid Conflict\n\nPERSONAL\n7 Humility\n8 Humor\n9 Hard Work\n10 Spirtuality\n\nTRIBAL\n11 Responsibility to Tribe\n12 Love for Children\n13 Domestic Skills\n14 Family Roles\n\nKNOWLEDGE\n15 Knowledge of Language\n16 Knowledge of Family Tree\n17 Hunter Success"
       },
       {
         "stepId": "complete_archive_flow",
-        "prompt": "Great! Thank you for adding your picture to the archive.",
+        "prompt": "Taikuu! We're working on a fun followup experience. Stay subscribed to find out. Reply STOP to unsubscribe. Tavra!",
         "expectedResponseType": "NONE",
         "runFlow": "image_archive_campaign"
       }
