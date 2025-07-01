@@ -20,6 +20,21 @@ The architecture is designed as a serverless, event-driven system to process a h
 * **Managed Services & Reduced Operational Overhead:** AWS manages the underlying infrastructure for Lambda, API Gateway, SQS, S3, DynamoDB, and the VPC components. This eliminates the need for server patching, OS maintenance, and other traditional operational tasks, allowing the development team to focus on application logic.  
 * **High Availability and Durability:** AWS services are designed for high availability and are deployed across multiple Availability Zones (AZs) by default. This provides built-in fault tolerance. S3, in particular, offers industry-leading durability for stored media files.
 
+## DynamoDB Data Model
+### `PakakUsers` Table
+This table stores user-specific information, including their subscription status, rate-limiting data, and processing locks. It is designed for fast, key-value lookups, which is essential for the synchronous checks performed by the `firewall` Lambda. The partition key is the user's phone number in E.164 format. A Global Secondary Index on the `awaitingDeletion` attribute allows the `cleaner` Lambda to efficiently find and process users flagged for deletion.
+
+| Attribute                  | Type    | Description                                                                 |
+| -------------------------- | ------- | --------------------------------------------------------------------------- |
+| `phone` (Partition Key)    | String  | The user's phone number in E.164 format (e.g., "+15551234567").              |
+| `subscriptionStatus`       | Boolean | User's opt-in status. `true` for subscribed, `false` for opted-out (STOP).    |
+| `isProcessingMessage`      | Number  | A timestamp lock to prevent concurrent message processing for the same user.  |
+| `rateLimitCounter`         | Number  | The number of messages the user has sent within the current time window.      |
+| `rateLimitWindowExpiresAt` | String  | An ISO 8601 timestamp indicating when the current rate-limit window expires.  |
+| `awaitingDeletion`         | Number  | A flag (0 or 1) used by the `cleaner` Lambda to identify users for data purge. |
+| `createdAt`                | String  | An ISO 8601 timestamp for when the user record was created.                 |
+| `updatedAt`                | String  | An ISO 8601 timestamp for when the user record was last updated.              |
+
 ## **AWS Setup Procedure \- Serverless**
 
 The entire infrastructure is defined as code using the Serverless Framework, which translates the serverless.yml configuration into an AWS CloudFormation stack.
