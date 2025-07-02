@@ -23,19 +23,19 @@ export const TWI_ML_RESPONSE = {
   SUBSCRIPTION_CONFIRMATION: asTwimlXmlString(
     `<Response>
       <Message>
-        Aqqaluk Trust: Taikuu! You've opted into receiving and submitting msgs. Reply INU to get the image of Inupiat Ilitqusiat to your phone. Msg &amp; data rates may apply. Reply STOP to unsubscribe.
+        Aqqaluk Trust: Taikuu! You've opted into receiving and submitting msgs. Reply INU to get the image of Inupiat Ilitqusiat to your phone. Msg rates may apply. Reply STOP to opt-out.
       </Message>
     </Response>`,
   ),
   ALREADY_SUBSCRIBED: asTwimlXmlString(
-    '<Response><Message>You are subscribed. Reply DELETE to delete your data and unsubscribe. Reply STOP to just opt-out.</Message></Response>',
+    '<Response><Message>You are subscribed. Reply STOP to opt-out. Reply DELETE to delete your data and opt-out.</Message></Response>',
   ),
   PROMPT_START_MESSAGE: asTwimlXmlString(
     '<Response><Message>If you would like to subscribe, reply "START". Msg &amp; data rates may apply.</Message></Response>',
   ),
   EMPTY_MESSAGE: asTwimlXmlString('<Response></Response>'),
   HELP_MESSAGE: asTwimlXmlString(
-    '<Response><Message>Aqqaluk Trust: Reply STOP to unsubscribe,\nSTART to subscribe,\nINU for Inupiat Ilitqusiat values, or\nHELP to see these options again.\n PROMPT to retrieve last question.</Message></Response>',
+    '<Response><Message>Aqqaluk Trust: Reply STOP to opt-out,\nSTART to subscribe,\nINU for Inupiat Ilitqusiat, or\nHELP to see these options.</Message></Response>',
   ),
   INUPIAT_VALUES_MESSAGE: asTwimlXmlString(
     `<Response>
