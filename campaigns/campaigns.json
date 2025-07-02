@@ -11,7 +11,7 @@
         "stepId": "ask_name",
         "prompt": "Let's personalize your experience! What's your full name?",
         "expectedResponseType": "TEXT",
-        "validationRegex": "^[A-Za-z\\s.'-]+$",
+        "validationRegex": "^[A-Za-z.'-]+(?:\\s+[A-Za-z.'-]+)+$",
         "nextStepId": "ask_village",
         "fieldName": "name",
         "fallbackMessage": "Oops. Be sure to include more than just your first name."
