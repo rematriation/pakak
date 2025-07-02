@@ -9,7 +9,7 @@
     "steps": [
       {
         "stepId": "ask_name",
-        "prompt": "Let's personalize your experience! What's your full name?",
+        "prompt": "Let's personalize your experience! What's your first and last name?",
         "expectedResponseType": "TEXT",
         "validationRegex": "^[A-Za-z.'-]+(?:\\s+[A-Za-z.'-]+)+$",
         "nextStepId": "ask_village",
