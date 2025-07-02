@@ -22,8 +22,8 @@ provider:
 
   environment:
     APP_STAGE: ${self:provider.stage}
-    NODE_ENV: dev
-    LOG_LEVEL: debug
+    NODE_ENV: ${self:custom.stageEnvs.${self:provider.stage}.NODE_ENV, 'development'}
+    LOG_LEVEL: ${self:custom.stageEnvs.${self:provider.stage}.LOG_LEVEL, 'debug'}
 
     DYNAMODB_TABLE: PakakUsers-${self:provider.stage}
 
@@ -114,6 +114,17 @@ plugins:
   - serverless-localstack
 
 custom:
+  notificationEmails:
+    - 'singh.daksh.pratap204@gmail.com'
+
+  stageEnvs:
+    prod:
+      NODE_ENV: production
+      LOG_LEVEL: info
+    dev:
+      NODE_ENV: development
+      LOG_LEVEL: debug
+
   localstackStages:
     local: dev
     dev: NO_MATCH
@@ -458,6 +469,144 @@ resources:
         VersioningConfiguration:
           Status: Enabled
       DeletionPolicy: Retain
+
+    ErrorSnsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        DisplayName: 'pakak application error alarms'
+        TopicName: pakak-error-alarms-${self:provider.stage}
+
+    SubscriptionEmail1:
+      Type: AWS::SNS::Subscription
+      Properties:
+        TopicArn: !Ref ErrorSnsTopic
+        Protocol: email
+        Endpoint: ${self:custom.notificationEmails.0}
+
+    FirewallErrorMetricFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-firewall'
+        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+        MetricTransformations:
+          - MetricName: 'firewall_errors'
+            MetricNamespace: 'pakak/application'
+            MetricValue: 1
+
+    HighFirewallErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: !Sub 'pakak-${self:provider.stage}-high-firewall-errors'
+        AlarmDescription: 'Fires when the firewall function logs 5 or more errors in 5 minutes.'
+        Namespace: 'pakak/application'
+        MetricName: 'firewall_errors'
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions: [!Ref ErrorSnsTopic]
+        TreatMissingData: notBreaching
+
+    WorkerErrorMetricFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-worker'
+        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+        MetricTransformations:
+          - MetricName: 'worker_errors'
+            MetricNamespace: 'pakak/application'
+            MetricValue: 1
+
+    HighWorkerErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: !Sub 'pakak-${self:provider.stage}-high-worker-errors'
+        AlarmDescription: 'Fires when the worker function logs 5 or more errors in 5 minutes.'
+        Namespace: 'pakak/application'
+        MetricName: 'worker_errors'
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions: [!Ref ErrorSnsTopic]
+        TreatMissingData: notBreaching
+
+    ScannerErrorMetricFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-scanner'
+        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+        MetricTransformations:
+          - MetricName: 'scanner_errors'
+            MetricNamespace: 'pakak/application'
+            MetricValue: 1
+
+    HighScannerErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: !Sub 'pakak-${self:provider.stage}-high-scanner-errors'
+        AlarmDescription: 'Fires when the scanner function logs 5 or more errors in 5 minutes.'
+        Namespace: 'pakak/application'
+        MetricName: 'scanner_errors'
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions: [!Ref ErrorSnsTopic]
+        TreatMissingData: notBreaching
+
+    DispatcherErrorMetricFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-dispatcher'
+        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+        MetricTransformations:
+          - MetricName: 'dispatcher_errors'
+            MetricNamespace: 'pakak/application'
+            MetricValue: 1
+
+    HighDispatcherErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: !Sub 'pakak-${self:provider.stage}-high-dispatcher-errors'
+        AlarmDescription: 'Fires when the dispatcher function logs 5 or more errors in 5 minutes.'
+        Namespace: 'pakak/application'
+        MetricName: 'dispatcher_errors'
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 5
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions: [!Ref ErrorSnsTopic]
+        TreatMissingData: notBreaching
+
+    CleanerErrorMetricFilter:
+      Type: AWS::Logs::MetricFilter
+      Properties:
+        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-cleaner'
+        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+        MetricTransformations:
+          - MetricName: 'cleaner_errors'
+            MetricNamespace: 'pakak/application'
+            MetricValue: 1
+
+    HighCleanerErrorAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: !Sub 'pakak-${self:provider.stage}-high-cleaner-errors'
+        AlarmDescription: 'Fires when the cleaner function logs 1 or more errors in 5 minutes.'
+        Namespace: 'pakak/application'
+        MetricName: 'cleaner_errors'
+        Statistic: Sum
+        Period: 300
+        EvaluationPeriods: 1
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        AlarmActions: [!Ref ErrorSnsTopic]
+        TreatMissingData: notBreaching
 
   Outputs:
     ApiGatewayEndpoint:
