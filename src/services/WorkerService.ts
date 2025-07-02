@@ -32,6 +32,7 @@ import { Types } from 'mongoose';
 import { IS3Service, IS3ServiceToken } from '../infrastructure/S3Service';
 import { InputHandlerProvider } from './input-helpers/InputHandlerProvider';
 import { IInputHandlerResult } from './input-helpers/InputHandler';
+import { ExpectedResponseType } from '../constants/ExpectedResponseType';
 
 @injectable()
 export class WorkerService {
@@ -160,7 +161,10 @@ export class WorkerService {
       submissionId = await this.#createSubmissionEntryForCampaign(msg.phoneNumber, flowId);
     }
 
-    state = stepId ? ConversationState.AWAITING_REPLY : ConversationState.IDLE;
+    state =
+      stepId && questionStep.expectedResponseType != ExpectedResponseType.NONE
+        ? ConversationState.AWAITING_REPLY
+        : ConversationState.IDLE;
     if (conversationStateChange) {
       console.debug(
         `WorkerService.campaignRunner :: Updating conversation context in User table for ${msg.phoneNumber}, flowId: ${flowId}, stepId: ${stepId}`,

@@ -12,4 +12,5 @@ export enum ExpectedResponseType {
   CHOICE = 'CHOICE',
   MAPPING = 'MAPPING',
   IMAGE = 'IMAGE',
+  NONE = 'NONE',
 }

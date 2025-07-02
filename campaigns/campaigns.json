@@ -185,9 +185,7 @@
       {
         "stepId": "complete_archive_flow",
         "prompt": "Taikuu!\nAarigaa! Your picture has been added to the archive.",
-        "expectedResponseType": "NONE",
-        "runFlow": "image_archive_campaign",
-        "nextStepId": "ask_for_picture_again"
+        "expectedResponseType": "NONE"
       }
     ],
     "isActive": true,
