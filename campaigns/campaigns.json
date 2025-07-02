@@ -184,7 +184,7 @@
       },
       {
         "stepId": "complete_archive_flow",
-        "prompt": "Taikuu! Aarigaa! We're working on a fun followup experience. Stay subscribed to find out. Reply STOP to unsubscribe. Tavra!",
+        "prompt": "Taikuu! Aarigaa! We're working on a fun followup experience. Stay subscribed to find out. Reply STOP to opt-out. Tavra!",
         "expectedResponseType": "NONE"
       }
     ],
