@@ -11,4 +11,5 @@ export enum Command {
   HELP = 'HELP',
   STATUS = 'STATUS',
   INU = 'INU',
+  PROMPT = 'PROMPT',
 }

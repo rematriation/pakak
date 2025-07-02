@@ -167,6 +167,17 @@ export class UserRepository {
     );
   }
 
+  async setConversationStateIDLE(phone: string): Promise<void> {
+    console.debug(`UserRepository :: Setting conversation IDLE for ${phone}`);
+    await UserModel.update(
+      { phone },
+      {
+        conversationState: ConversationState.IDLE,
+        isProcessingMessage: 0,
+      },
+    );
+  }
+
   /**
    * Retrieves users from DynamoDB based on their awaitingDeletion flag.
    * This queries the 'DeletionStatusIndex'.

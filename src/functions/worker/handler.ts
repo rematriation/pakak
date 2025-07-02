@@ -30,43 +30,41 @@ import { IS3ServiceToken, S3Service } from '../../infrastructure/S3Service';
 import { TwilioClient } from '../../infrastructure/twilio';
 import { InputHandlerProvider } from '../../services/input-helpers/InputHandlerProvider';
 
-container.register(IAppConfigToken, { useClass: AppConfig });
+container.registerSingleton(IAppConfigToken, AppConfig);
 const appConfig: AppConfig = container.resolve(IAppConfigToken);
 
-container.register(MongooseConnectionService, { useClass: MongooseConnectionService });
+container.registerSingleton(MongooseConnectionService);
 const mongooseConnectionService: MongooseConnectionService =
   container.resolve(MongooseConnectionService);
 
-container.register(UserRepository, { useClass: UserRepository });
+container.registerSingleton(UserRepository);
 container.resolve(UserRepository);
 
-container.register(ISQSServiceToken, { useClass: SQSService });
+container.registerSingleton(ISQSServiceToken, SQSService);
 const sqsService: ISQSService = container.resolve(ISQSServiceToken);
 
-container.register(UserProfileRepository, { useClass: UserProfileRepository });
+container.registerSingleton(UserProfileRepository, UserProfileRepository);
 container.resolve(UserProfileRepository);
 
-container.register(CampaignSubmissionRepository, { useClass: CampaignSubmissionRepository });
+container.registerSingleton(CampaignSubmissionRepository);
 container.resolve(CampaignSubmissionRepository);
 
-container.register(ICampaignLoaderServiceToken, { useClass: CampaignLoaderService });
+container.registerSingleton(ICampaignLoaderServiceToken, CampaignLoaderService);
 container.resolve(CampaignLoaderService);
 
-container.register(ISubmissionRepositoryProviderToken, {
-  useClass: SubmissionRepositoryProvider,
-});
+container.registerSingleton(ISubmissionRepositoryProviderToken, SubmissionRepositoryProvider);
 container.resolve(ISubmissionRepositoryProviderToken);
 
-container.register(IS3ServiceToken, { useClass: S3Service });
+container.registerSingleton(IS3ServiceToken, S3Service);
 container.resolve(IS3ServiceToken);
 
-container.register(TwilioClient, { useClass: TwilioClient });
+container.registerSingleton(TwilioClient);
 container.resolve(TwilioClient);
 
 container.registerSingleton(InputHandlerProvider);
 container.resolve(InputHandlerProvider);
 
-container.register(WorkerService, { useClass: WorkerService });
+container.registerSingleton(WorkerService);
 const workerService: WorkerService = container.resolve(WorkerService);
 
 export const handler = async (event: SQSEvent): Promise<void> => {

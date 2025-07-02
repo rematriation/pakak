@@ -17,6 +17,7 @@ export interface IInputHandlerContext {
 
 export interface IInputHandlerResult {
   status: boolean;
+  flowId: CampaignId;
   nextStepId: string | undefined;
 }
 

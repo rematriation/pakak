@@ -35,6 +35,7 @@ export class DispatcherService {
     try {
       const ack = await this.twilioClient.client.messages.create({
         from: message.from,
+        messagingServiceSid: this.appConfig.twilioMessagingServiceSid,
         to: message.to,
         body: message.body,
       });
