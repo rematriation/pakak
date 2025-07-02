@@ -31,6 +31,7 @@ provider:
     MONGODB_DBNAME: pakak_${self:provider.stage}
 
     TWILIO_NUMBER: ${ssm:/pakak/${self:provider.stage}/TWILIO_NUMBER}
+    TWILIO_MESSAGING_SERVICE_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_MESSAGING_SERVICE_SID}
     TWILIO_ACCOUNT_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_SID}
     TWILIO_AUTH_TOKEN: ${ssm:/pakak/${self:provider.stage}/TWILIO_TOKEN}
 
@@ -49,8 +50,8 @@ provider:
 
     # ClamAV stuff
     # Path setting for ClamAV
-    # PATH: '/opt/clamav/bin:$PATH'
-    # LD_LIBRARY_PATH: '/opt/clamav/lib:${LD_LIBRARY_PATH:-}'
+    PATH: '/opt/clamav/bin:$PATH'
+    LD_LIBRARY_PATH: '$LD_LIBRARY_PATH:/opt/clamav/lib'
 
     # environment variables for ClamAV referenced in code
     CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
@@ -107,14 +108,7 @@ provider:
 
         - Effect: Allow
           Action: lambda:GetLayerVersion
-          Resource: arn:aws:lambda:us-east-1:698528537338:layer:clamav-prod:6
-
-        # - Effect: Allow
-        #   Action:
-        #     - logs:CreateLogGroup
-        #     - logs:CreateLogStream
-        #     - logs:PutLogEvents
-        #   Resource: arn:aws:logs:${self:provider.region}:*:log-group:/aws/lambda/pakak-${self:provider.stage}-*:*
+          Resource: ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
 
 plugins:
   - serverless-localstack
@@ -164,7 +158,7 @@ functions:
           bucket: pakak-${self:provider.stage}-raw
           event: s3:ObjectCreated:*
     layers:
-      - arn:aws:lambda:us-east-1:698528537338:layer:clamav-prod:6
+      - ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
     onError:
       Fn::GetAtt: [ScannerDLQ, Arn]
     environment:
@@ -179,7 +173,6 @@ functions:
       - sqs:
           arn: { 'Fn::GetAtt': [OutgoingQueue, Arn] }
           batchSize: 1
-          maximumConcurrency: 4
 
   cleaner:
     handler: dist/functions/cleaner/handler.handler
@@ -330,6 +323,22 @@ resources:
         SecurityGroupEgress:
           - CidrIp: 0.0.0.0/0
             IpProtocol: -1
+
+    S3GatewayEndpoint:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        VpcId: !Ref VPC
+        ServiceName: !Sub 'com.amazonaws.${self:provider.region}.s3'
+        RouteTableIds:
+          - !Ref PrivateRouteTable
+
+    DynamoDBGatewayEndpoint:
+      Type: AWS::EC2::VPCEndpoint
+      Properties:
+        VpcId: !Ref VPC
+        ServiceName: !Sub 'com.amazonaws.${self:provider.region}.dynamodb'
+        RouteTableIds:
+          - !Ref PrivateRouteTable
 
     # DynamoDB
     UsersTable:

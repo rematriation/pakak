@@ -19,6 +19,7 @@ export interface IAppConfig {
   logLevel: string;
   dynamoDbTable: string;
   twilioNumber: string;
+  twilioMessagingServiceSid: string;
   twilioAccountSid: string;
   twilioAuthToken: string;
   incomingSqsQueueUrl: string;
@@ -77,6 +78,7 @@ export class AppConfig implements IAppConfig {
   public readonly ttlForProcessingLock: number;
   public readonly maxMessagesPerWindow: number;
   public readonly rateLimitWindowSeconds: number;
+  public readonly twilioMessagingServiceSid: string;
 
   constructor() {
     this.appStage = this.getRequiredEnv('APP_STAGE');
@@ -104,6 +106,7 @@ export class AppConfig implements IAppConfig {
     this.ttlForProcessingLock = parseInt(this.getRequiredEnv('TTL_FOR_PROCESSING_LOCK'));
     this.maxMessagesPerWindow = parseInt(this.getRequiredEnv('MAX_MESSAGES_PER_WINDOW'));
     this.rateLimitWindowSeconds = parseInt(this.getRequiredEnv('RATE_LIMIT_WINDOW_SECONDS'));
+    this.twilioMessagingServiceSid = this.getRequiredEnv('TWILIO_MESSAGING_SERVICE_SID');
   }
 
   /**

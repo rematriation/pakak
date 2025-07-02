@@ -38,7 +38,8 @@
         "stepId": "complete_profile_flow",
         "prompt": "Taikuu! Your profile is now updated.",
         "expectedResponseType": "NONE",
-        "runFlow": "image_archive_campaign"
+        "runFlow": "image_archive_campaign",
+        "nextStepId": "ask_for_picture"
       }
     ],
     "isActive": true,
@@ -64,7 +65,16 @@
         "validationRegex": "^image\/(jpeg|jpg|gif|png|heic|heif|tiff|bmp)$",
         "nextStepId": "ask_knows_time",
         "fieldName": "image_url",
-        "fallbackMessage": "That doesn't look like a picture. Go Pakak! Find the picture, take a picture of it, and send it to us."
+        "fallbackMessage": "That doesn't look like a picture."
+      },
+      {
+        "stepId": "ask_for_picture_again",
+        "prompt": "If you'd like to add more pictures, you can go Pakak again. Find another picture, take a picture of it, and send it to us.",
+        "expectedResponseType": "IMAGE",
+        "validationRegex": "^image\/(jpeg|jpg|gif|png|heic|heif|tiff|bmp)$",
+        "nextStepId": "ask_knows_time",
+        "fieldName": "image_url",
+        "fallbackMessage": "That doesn't look like a picture."
       },
       {
         "stepId": "ask_knows_time",

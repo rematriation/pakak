@@ -27,7 +27,7 @@ export class ScannerService {
 
   async scan(s3FileObject: IS3ObjectData): Promise<IScanResult> {
     try {
-      console.debug(`ScannerService.scan :: received to scan `, s3FileObject);
+      console.debug(`ScannerService.scan :: received to scan: `, s3FileObject);
       if (!s3FileObject.tags) {
         console.error(
           `ScannerService.scan :: no tags exist for this file. Unable to identify which campaign/submissionId it belongs to. Key: ${s3FileObject.key}, bucket: ${s3FileObject.bucket}`,

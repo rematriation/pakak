@@ -9,8 +9,13 @@
 import { Command } from '../constants/Command';
 
 export function sanitizeTxtMessage(rawMsg: string | undefined | null): string {
-  /* eslint-disable-next-line no-control-regex */
-  return (rawMsg || '').replace(/[\x00-\x1F\x7F]/g, '').replace(/<[^>]*>?/gm, '');
+  return (
+    (rawMsg || '')
+      /* eslint-disable-next-line no-control-regex */
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .replace(/<[^>]*>?/gm, '')
+      .trim()
+  );
 }
 
 export function extractCommandKeyword(msg: string): Command | null {

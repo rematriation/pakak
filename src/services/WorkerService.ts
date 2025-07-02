@@ -32,6 +32,7 @@ import { Types } from 'mongoose';
 import { IS3Service, IS3ServiceToken } from '../infrastructure/S3Service';
 import { InputHandlerProvider } from './input-helpers/InputHandlerProvider';
 import { IInputHandlerResult } from './input-helpers/InputHandler';
+import { ExpectedResponseType } from '../constants/ExpectedResponseType';
 
 @injectable()
 export class WorkerService {
@@ -48,11 +49,9 @@ export class WorkerService {
 
   async processMessage(incomingMessage: IIncomingMessage): Promise<IOutgoingMessage> {
     console.debug(`WorkerService :: processing messaage :: `, incomingMessage);
+    const keyword: Command | null = extractCommandKeyword(incomingMessage.messageText || '');
     // check if user profile has to be created
-    if (
-      incomingMessage.messageText &&
-      extractCommandKeyword(incomingMessage.messageText) === Command.START
-    ) {
+    if (keyword === Command.START) {
       const userProfile: IUserProfileDocument | null =
         await this.userProfileRepository.getUserProfile(incomingMessage.phoneNumber);
       if (!userProfile) {
@@ -63,6 +62,10 @@ export class WorkerService {
       }
     }
     const user: IUser = (await this.userRepository.getUser(incomingMessage.phoneNumber)) as IUser;
+    if (keyword) {
+      user.conversationState = ConversationState.IDLE;
+    }
+
     return await this.#campaignRunner(
       incomingMessage,
       user.conversationState as ConversationState,
@@ -130,6 +133,7 @@ export class WorkerService {
         conversationStateChange = true;
         responseStrs.push(RESPONSE.GENERIC_ACK);
         if (result.nextStepId) {
+          flowId = result.flowId;
           questionStep = await this.campaignLoaderService.getQuestionStep(
             flowId,
             result.nextStepId,
@@ -146,8 +150,10 @@ export class WorkerService {
     if (questionStep.runFlow) {
       // jump to the flow referenced.
       flowId = questionStep.runFlow as CampaignId;
-      questionStep = (await this.campaignLoaderService.getCampaignDefinition(flowId)).steps[0];
-      stepId = questionStep.stepId;
+      stepId = questionStep.nextStepId
+        ? questionStep.nextStepId
+        : (await this.campaignLoaderService.getCampaignDefinition(flowId)).steps[0].stepId;
+      questionStep = await this.campaignLoaderService.getQuestionStep(flowId, stepId);
       responseStrs.push(questionStep.prompt);
 
       // create a submission entry since we're running a new campaign/flow which would need its own submission entry.
@@ -155,7 +161,10 @@ export class WorkerService {
       submissionId = await this.#createSubmissionEntryForCampaign(msg.phoneNumber, flowId);
     }
 
-    state = stepId ? ConversationState.AWAITING_REPLY : ConversationState.IDLE;
+    state =
+      stepId && questionStep.expectedResponseType != ExpectedResponseType.NONE
+        ? ConversationState.AWAITING_REPLY
+        : ConversationState.IDLE;
     if (conversationStateChange) {
       console.debug(
         `WorkerService.campaignRunner :: Updating conversation context in User table for ${msg.phoneNumber}, flowId: ${flowId}, stepId: ${stepId}`,

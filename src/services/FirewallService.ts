@@ -41,11 +41,16 @@ export class FirewallService {
       return this.#handleUnsubscribedUser(phoneNumber);
     }
 
+    let response: APIGatewayProxyResult = twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
     switch (cmd) {
+      case Command.START:
+        response = await this.#subscribeUser(phoneNumber, user.subscriptionStatus);
+        break;
       case Command.DELETE:
         return this.#deleteUserData(phoneNumber);
       case Command.HELP:
-        return this.#returnHelpMessage(phoneNumber);
+        response = this.#returnHelpMessage(phoneNumber);
+        break;
       case Command.INU:
         return this.#returnInupiatValues(phoneNumber);
       case Command.STOP:
@@ -56,10 +61,7 @@ export class FirewallService {
       `FirewallService :: Pushing message to ${this.appConfig.incomingSqsQueueUrl} with msg :: `,
     );
     await this.sqsService.sendMessage(this.appConfig.incomingSqsQueueUrl, incomingMsg, phoneNumber);
-    if (cmd === Command.START) {
-      return this.#subscribeUser(phoneNumber, user.subscriptionStatus);
-    }
-    return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
+    return response;
   }
 
   async #handleUserAwaitingDeletion(phoneNumber: string): Promise<APIGatewayProxyResult> {
@@ -108,7 +110,7 @@ export class FirewallService {
    */
   async #returnInupiatValues(phoneNumber: string): Promise<APIGatewayProxyResult> {
     console.debug(`FirewallService :: User ${phoneNumber} requested for Inupiat values.`);
-    await this.userRepository.releaseProcessingLock(phoneNumber);
+    await this.userRepository.setConversationStateIDLE(phoneNumber);
     return twilioResponse(TWI_ML_RESPONSE.INUPIAT_VALUES_MESSAGE);
   }
 
@@ -117,11 +119,10 @@ export class FirewallService {
    * @param phoneNumber phone number of user requesting.
    * @returns
    */
-  async #returnHelpMessage(phoneNumber: string): Promise<APIGatewayProxyResult> {
+  #returnHelpMessage(phoneNumber: string): APIGatewayProxyResult {
     console.debug(
       `FirewallService :: User ${phoneNumber} requested for HELP. Twilio will handle it.`,
     );
-    await this.userRepository.releaseProcessingLock(phoneNumber);
     return twilioResponse(TWI_ML_RESPONSE.EMPTY_MESSAGE);
   }
 
@@ -136,7 +137,6 @@ export class FirewallService {
       response = twilioResponse(TWI_ML_RESPONSE.SUBSCRIPTION_CONFIRMATION);
     } else {
       console.debug(`FirewallService :: User ${phoneNumber} already susbcribed.`);
-      await this.userRepository.releaseProcessingLock(phoneNumber);
       response = twilioResponse(TWI_ML_RESPONSE.ALREADY_SUBSCRIBED);
     }
 
@@ -190,6 +190,7 @@ export class FirewallService {
         TWI_ML_RESPONSE.RATE_LIMIT_EXCEEDED.replace('{{RETURN_TIME}}', returnTimeString),
       );
 
+      await this.userRepository.setConversationStateIDLE(user.phone);
       return twilioResponse(rateLimitMessage);
     }
 

@@ -13,9 +13,7 @@ export const TWI_ML_RESPONSE = {
   UNKNOWN_COMMAND: asTwimlXmlString(
     '<Response><Message>Sorry, I don&apos;t understand that command. Try START or STOP.</Message></Response>',
   ),
-  PROCESSING_REQUEST: asTwimlXmlString(
-    '<Response><Message>Please wait a moment...</Message></Response>',
-  ),
+  PROCESSING_REQUEST: asTwimlXmlString('<Response><Message>Slow down...</Message></Response>'),
   WELCOME_MESSAGE: asTwimlXmlString(
     "<Response><Message>Hi from Aqqaluk Trust.\nWelcome to our Sivu Summer archiving activity with our app called Pakak.\nReply START to agree to receive about 8-10 messages from Aqqaluk Trust for each submission.\nReview Pakak's Terms of Services (www.aqqaluktrust.com/pakak-tos/) and Privacy Policy (www.aqqaluktrust.com/pakak-privacy/). Msg &amp; data rates may apply.\nReply STOP to opt-out.</Message></Response>",
   ),
@@ -50,7 +48,7 @@ export const TWI_ML_RESPONSE = {
     </Response>`,
   ),
   DELETE_CONFIRMATION_MESSAGE: asTwimlXmlString(
-    '<Response><Message>Your data deletion request has been received. This will also unsubscribe you from messages. It will be processed shortly.</Message></Response>',
+    '<Response><Message>Your data deletion request has been received. It will be processed by tomorrow. You are also unsubscribed now..</Message></Response>',
   ),
   TRY_AGAIN_NEXT_DAY_AFTER_DELETION: asTwimlXmlString(
     '<Response><Message>You have requested data deletion and have been unsubscribed. Please try to resubscribe again tomorrow.</Message></Response>',

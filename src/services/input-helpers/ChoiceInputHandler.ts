@@ -38,11 +38,12 @@ export class ChoiceInputHandler implements IInputHandler {
         const result: IInputHandlerResult = {
           status: true,
           nextStepId: rule.nextStepId,
+          flowId: campaignId,
         };
         return result;
       }
     }
 
-    return { status: false, nextStepId: undefined };
+    return { status: false, nextStepId: undefined, flowId: campaignId };
   }
 }
