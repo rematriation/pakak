@@ -132,6 +132,7 @@ functions:
     handler: dist/functions/firewall/handler.handler
     memorySize: 512
     timeout: 3
+    reservedConcurrency: 350
     events:
       - http:
           path: '/webhook'
@@ -142,11 +143,13 @@ functions:
 
   worker:
     handler: dist/functions/worker/handler.handler
+    reservedConcurrency: 450
     events:
       - sqs:
           arn: { 'Fn::GetAtt': [IncomingQueue, Arn] }
           batchSize: 1
           maximumBatchingWindow: 0
+          maximumConcurrency: 450
 
   scanner:
     architecture: arm64
@@ -157,6 +160,7 @@ functions:
       - s3:
           bucket: pakak-${self:provider.stage}-raw
           event: s3:ObjectCreated:*
+          existing: true
     layers:
       - ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
     onError:
@@ -169,14 +173,18 @@ functions:
     handler: dist/functions/dispatcher/handler.handler
     memorySize: 256
     timeout: 30
+    reservedConcurrency: 150
     events:
       - sqs:
           arn: { 'Fn::GetAtt': [OutgoingQueue, Arn] }
           batchSize: 1
+          maximumBatchingWindow: 0
+          maximumConcurrency: 150
 
   cleaner:
     handler: dist/functions/cleaner/handler.handler
     timeout: 900
+    reservedConcurrency: 1
     events:
       - schedule: cron(0 12 * * ? *)
 
@@ -427,15 +435,13 @@ resources:
               Action: 's3:GetObject'
               Resource: !Join ['', [!GetAtt StaticAssetsBucket.Arn, '/*']]
 
-    # RawBucket:
-    #   Type: AWS::S3::Bucket
-    #   Properties:
-    #     BucketName: pakak-raw-${self:provider.stage}
-    #     NotificationConfiguration:
-    #       LambdaConfigurations:
-    #         - Event: s3:ObjectCreated:*
-    #           Function:
-    #             Fn::GetAtt: [ ScannerLambdaFunction, Arn ]
+    RawBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: pakak-${self:provider.stage}-raw
+        VersioningConfiguration:
+          Status: Enabled
+      DeletionPolicy: Retain
 
     CleanBucket:
       Type: AWS::S3::Bucket
@@ -443,6 +449,7 @@ resources:
         BucketName: pakak-${self:provider.stage}-clean
         VersioningConfiguration:
           Status: Enabled
+      DeletionPolicy: Retain
 
     QuarantineBucket:
       Type: AWS::S3::Bucket
@@ -450,6 +457,7 @@ resources:
         BucketName: pakak-${self:provider.stage}-quarantine
         VersioningConfiguration:
           Status: Enabled
+      DeletionPolicy: Retain
 
   Outputs:
     ApiGatewayEndpoint:
