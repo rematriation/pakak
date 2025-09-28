@@ -116,7 +116,95 @@ The verification, like verifying brands, is meant to ensure compliance with mobi
 
 ### 4. Regulatory Compliance Actions
 
-TODO: Enter items here.
+Must provide the following information:
+
+1. Campaign Description
+2. Campaign use case: For Aqqaluk Trust, it is a "Charity" option.
+3. Sample Messages
+4. Sending messages with:
+    1. Emmbedded links
+    2. Embedded phone numbers
+    3. Age-gated content
+    4. Content related to direct lending or other loan arrangement
+
+#### Campaign description
+
+This campaign by the charity (501(c)3) Aqqaluk Trust (AT) asks people in the communities they serve in the Northwest Arctic Borough in Alaska to complete an "archiving" activity through one of their summer community programs called Sivu Summer (see example excerpt from booklet: https://www.aqqaluktrust.com/wp-content/uploads/2025/06/SIVU-Summer-Pakak-Archiving.pdf) through our Twilio serverless app called "Pakak". AT will notify community members about Pakak by sending them a printed activity booklet with directions about how they can choose to participate in the activity. If a community member chooses to subscribe to Pakak, they can text our campaigns number "PAKAK" to start the opt-in process. If they opt-in, the activity asks them to find an image for AT to archive by taking a picture of it and sending it to Pakak. The app, Pakak, then guides users through a series of questions about When the picture was taken, Where it was taken, and what community value they think the picture best represents. The user's phone number, basic profile information, submitted image, and information about the image are stored and maintained by AT, but users retain all ownership rights to their data and can opt-out at any time. Users can also request all of their data be deleted by contacting us. All of this information is provided to them via our Terms of Service (https://www.aqqaluktrust.com/pakak-tos/) and Privacy Policy (https://www.aqqaluktrust.com/pakak-privacy/).
+
+#### Campaign use case
+
+Charity
+
+#### Sample messages
+
+From the prototype Pakak app. Must show the process of opting in and out.
+
+> Hi from Aqqaluk Trust. Welcome to our Sivu Summer archiving activity with our app called Pakak. Reply START to agree to receive about 8-10 messages from Aqqaluk Trust for each submission. Review Pakak's Terms of Services (www.aqqaluktrust.com/pakak-tos/) and Privacy Policy (www.aqqaluktrust.com/pakak-privacy/). Msg & data rates may apply. Reply STOP to opt-out.
+
+> Aqqaluk Trust: Taikuu! You've opted into receiving and submitting msgs. Msg and data rates may apply. Reply STOP to opt-out or HELP for options.
+
+> Aqqaluk Trust: You replied "STOP" which blocks all texts sent from this number. Text UNSTOP or START to receive msgs again. Msg and data rates may apply.
+
+> Assuming the user is subscribed and sends our number an image as instructed in the Sivu Summer activity booklet: “Do you know about WHEN this picture was taken? Reply YES or NO. Msg & data rates may apply. Reply STOP to opt-out or HELP for options.”
+
+> Assuming the user is subscribed and responds to sample msg #4: “About what year or decade was the original picture taken? Reply with 4 numbers like '1990' or '2002'. Msg & data rates may apply. Reply STOP to opt-out or HELP for options.”
+
+#### Sending messages with ...?
+
+- embedded links? *Yes*
+- embedded phone numbers? *No*
+- age-gated content? *No*
+- content about direct lending or other loan arrangements? *No*
+
+### Opt-Out Management
+
+Standard Opt-Out Keywords: All of your recipients will get these opt-out responses unless you create responses for their specific spoken language or country code.
+
+Opt-Out
+Keywords: cancel, end, optout, quit, revoke, stop, stopall, unsubscribe
+Message: Aqqaluk Trust: You replied STOP which blocks all texts sent from this number. Text UNSTOP or START to receive msgs again.
+Opt-In
+Keywords: start, unstop
+Message: Aqqaluk Trust: Subscribed.
+Help
+Keywords: help
+Message: Aqqaluk Trust: Reply STOP to unsubscribe, START to subscribe, INU for Inupiat Ilitqusiat values, PROMPT to retrieve last question, or HELP to see these options again.
+
+### Content Settings
+
+Configure your Messaging Services to include logic for content formatting and message-type fallback. Using these features can help you avoid encoding failures, formatting issues, and other delivery issues.
+ON - Smart Encoding SMS
+
+Smart encoding detects Unicode characters that are easy to miss and replaces them with similar GSM encoded characters. This substitution helps ensure that your messages are segmented properly at 160 characters.
+ON - MMS Converter SMS
+
+If a carrier can’t receive MMS, Twilio will automatically deliver your message as an SMS text message and include a shortened URL to the image you tried to send as an MMS.
+
+### Integration
+
+Manage how your Messaging Service integrates with your application.
+
+**Incoming Messages**: Select how your Messaging Service handles inbound messages
+
+- Select **Defer to sender’s webhook**: Invoke the sender’s HTTP webhook (if it is defined) for incoming messages.
+
+**Delivery Status Callback**: Provide a URL for Twilio to call via webhook to let you know the delivery status of your message.
+
+- **Callback URL**: No value; keep blank.
+
+**Validity Period**: After the Validity Period has elapsed, any unsent messages will not be sent.
+
+- **Twilio Queue time limit (seconds)**: 14400
+    - This only affects messages that are in queue on Twilio and have not yet been sent to the carrier. Learn more about Twilio message queues and rate limits here.
+    - Twilio Queue time limit can be maximum of 36000 Seconds (10 hours)
+
+### Sender Pool
+
+A Sender represents a channel, number type, or messaging type that can receive and send messages using the Twilio Messaging API. Messaging Services come with built-in features to help you select the best Sender for your use case and scale your application.
+
+**Sender Selection Settings**
+- `ON` - Sticky Sender SMS: Sticky Sender ensures consistency for message recipients by selecting the same From phone number you previously used in conversation with a given customer.
+- `ON` - Area Code Geomatch SMS: Use local phone numbers with area codes that match or overlay your recipient's phone number when sending messages to the US and Canada.
 
 ### 5. Apply for Twilio's Impact Access Program credits ($100)
 
