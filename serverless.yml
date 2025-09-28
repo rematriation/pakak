@@ -1,623 +1,623 @@
-service: pakak
-
-variablesResolutionMode: 20210326
-useDotenv: true
-
-frameworkVersion: '3'
-
-# ───────── Global defaults & per-stage naming ─────────
-provider:
-  name: aws
-  runtime: nodejs20.x
-  region: us-east-1
-  stage: ${opt:stage, 'dev'}
-  stackName: pakak-${self:provider.stage}
-
-  vpc:
-    securityGroupIds:
-      - !Ref LambdaSecurityGroup
-    subnetIds:
-      - !Ref PrivateSubnetA
-      - !Ref PrivateSubnetB
-
-  environment:
-    APP_STAGE: ${self:provider.stage}
-    NODE_ENV: ${self:custom.stageEnvs.${self:provider.stage}.NODE_ENV, 'development'}
-    LOG_LEVEL: ${self:custom.stageEnvs.${self:provider.stage}.LOG_LEVEL, 'debug'}
-
-    DYNAMODB_TABLE: PakakUsers-${self:provider.stage}
-
-    MONGODB_URI: ${ssm:/pakak/${self:provider.stage}/MONGODB_URI}
-    MONGODB_DBNAME: pakak_${self:provider.stage}
-
-    TWILIO_NUMBER: ${ssm:/pakak/${self:provider.stage}/TWILIO_NUMBER}
-    TWILIO_MESSAGING_SERVICE_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_MESSAGING_SERVICE_SID}
-    TWILIO_ACCOUNT_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_SID}
-    TWILIO_AUTH_TOKEN: ${ssm:/pakak/${self:provider.stage}/TWILIO_TOKEN}
-
-    ADMIN_PHONE: ${ssm:/pakak/${self:provider.stage}/ADMIN_PHONE}
-
-    INCOMING_SQS_QUEUE_URL: !GetAtt IncomingQueue.QueueUrl
-    OUTGOING_SQS_QUEUE_URL: !GetAtt OutgoingQueue.QueueUrl
-
-    STATIC_ASSETS_BUCKET_NAME: !Ref StaticAssetsBucket
-    STATIC_ASSETS_BASE_URL: !Sub 'https://${StaticAssetsBucket}.s3.${self:provider.region}.amazonaws.com'
-    INUPIAT_VALUES_IMAGE_NAME: 'Inupiat_Ilitqusiat_Values.jpg'
-
-    RAW_BUCKET_NAME: pakak-${self:provider.stage}-raw
-    CLEAN_BUCKET_NAME: pakak-${self:provider.stage}-clean
-    QUARANTINE_BUCKET_NAME: pakak-${self:provider.stage}-quarantine
-
-    # ClamAV stuff
-    # Path setting for ClamAV
-    PATH: '/opt/clamav/bin:$PATH'
-    LD_LIBRARY_PATH: '$LD_LIBRARY_PATH:/opt/clamav/lib'
-
-    # environment variables for ClamAV referenced in code
-    CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
-    CLAMAV_DB_PATH: /tmp/clamav
-
-    BIN_DIR: /opt/clamav/bin
-
-    # Rate limit fields
-    TTL_FOR_PROCESSING_LOCK: ${ssm:/pakak/${self:provider.stage}/TTL_FOR_PROCESSING_LOCK}
-    MAX_MESSAGES_PER_WINDOW: ${ssm:/pakak/${self:provider.stage}/MAX_MESSAGES_PER_WINDOW}
-    RATE_LIMIT_WINDOW_SECONDS: ${ssm:/pakak/${self:provider.stage}/RATE_LIMIT_WINDOW_SECONDS}
-
-  iam:
-    role:
-      statements:
-        - Effect: Allow
-          Action:
-            - ec2:CreateNetworkInterface
-            - ec2:DescribeNetworkInterfaces
-            - ec2:DeleteNetworkInterface
-          Resource: '*'
-
-        - Effect: Allow
-          Action:
-            - dynamodb:GetItem
-            - dynamodb:PutItem
-            - dynamodb:UpdateItem
-            - dynamodb:Scan
-            - dynamodb:DescribeTable
-            - dynamodb:Query
-          Resource:
-            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}
-            - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/DeletionStatusIndex
-
-        - Effect: Allow
-          Action: sqs:*
-          Resource:
-            - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-incoming.fifo
-            - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-outgoing.fifo
-            - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-scanner-dlq
-
-        - Effect: Allow
-          Action:
-            - s3:*
-          Resource:
-            - arn:aws:s3:::pakak-${self:provider.stage}-raw/*
-            - arn:aws:s3:::pakak-${self:provider.stage}-clean/*
-            - arn:aws:s3:::pakak-${self:provider.stage}-quarantine/*
-            - arn:aws:s3:::pakak-lambda-layers/*
-            - arn:aws:s3:::pakak-${self:provider.stage}-raw
-            - arn:aws:s3:::pakak-${self:provider.stage}-clean
-            - arn:aws:s3:::pakak-${self:provider.stage}-quarantine
-            - arn:aws:s3:::pakak-lambda-layers
-
-        - Effect: Allow
-          Action: lambda:GetLayerVersion
-          Resource: ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
-
-plugins:
-  - serverless-localstack
-
-custom:
-  notificationEmails:
-    - 'singh.daksh.pratap204@gmail.com'
-
-  stageEnvs:
-    prod:
-      NODE_ENV: production
-      LOG_LEVEL: info
-    dev:
-      NODE_ENV: development
-      LOG_LEVEL: debug
-
-  localstackStages:
-    local: dev
-    dev: NO_MATCH
-    prod: NO_MATCH
-
-  localstack:
-    host: http://localhost
-    edgePort: 4566
-    stages:
-      - ${self:custom.localstackStages.${opt:stage, self:provider.stage}}
-    autostart: false
-
-# ───────── Lambda Functions ─────────
-functions:
-  firewall:
-    handler: dist/functions/firewall/handler.handler
-    memorySize: 512
-    timeout: 3
-    reservedConcurrency: 350
-    events:
-      - http:
-          path: '/webhook'
-          method: get
-      - http:
-          path: '/webhook'
-          method: post
-
-  worker:
-    handler: dist/functions/worker/handler.handler
-    reservedConcurrency: 450
-    events:
-      - sqs:
-          arn: { 'Fn::GetAtt': [IncomingQueue, Arn] }
-          batchSize: 1
-          maximumBatchingWindow: 0
-          maximumConcurrency: 450
-
-  scanner:
-    architecture: arm64
-    handler: dist/functions/scanner/handler.handler
-    memorySize: 2048
-    timeout: 300
-    events:
-      - s3:
-          bucket: pakak-${self:provider.stage}-raw
-          event: s3:ObjectCreated:*
-          existing: true
-    layers:
-      - ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
-    onError:
-      Fn::GetAtt: [ScannerDLQ, Arn]
-    environment:
-      CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
-      CLAMAV_DB_PATH: /tmp/clamav
-
-  dispatcher:
-    handler: dist/functions/dispatcher/handler.handler
-    memorySize: 256
-    timeout: 30
-    reservedConcurrency: 150
-    events:
-      - sqs:
-          arn: { 'Fn::GetAtt': [OutgoingQueue, Arn] }
-          batchSize: 1
-          maximumBatchingWindow: 0
-          maximumConcurrency: 150
-
-  cleaner:
-    handler: dist/functions/cleaner/handler.handler
-    timeout: 900
-    reservedConcurrency: 1
-    events:
-      - schedule: cron(0 12 * * ? *)
-
-# ───────── CloudFormation Resources ─────────
-resources:
-  Resources:
-    VPC:
-      Type: AWS::EC2::VPC
-      Properties:
-        CidrBlock: 10.0.0.0/16
-        EnableDnsSupport: true
-        EnableDnsHostnames: true
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-vpc
-
-    PublicSubnetA:
-      Type: AWS::EC2::Subnet
-      Properties:
-        VpcId: !Ref VPC
-        CidrBlock: 10.0.1.0/24
-        AvailabilityZone: ${self:provider.region}a
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-public-subnet-a
-
-    PublicSubnetB:
-      Type: AWS::EC2::Subnet
-      Properties:
-        VpcId: !Ref VPC
-        CidrBlock: 10.0.2.0/24
-        AvailabilityZone: ${self:provider.region}b
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-public-subnet-b
-
-    PrivateSubnetA:
-      Type: AWS::EC2::Subnet
-      Properties:
-        VpcId: !Ref VPC
-        CidrBlock: 10.0.3.0/24
-        AvailabilityZone: ${self:provider.region}a
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-private-subnet-a
-
-    PrivateSubnetB:
-      Type: AWS::EC2::Subnet
-      Properties:
-        VpcId: !Ref VPC
-        CidrBlock: 10.0.4.0/24
-        AvailabilityZone: ${self:provider.region}b
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-private-subnet-b
-
-    InternetGateway:
-      Type: AWS::EC2::InternetGateway
-      Properties:
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-igw
-
-    VPCGatewayAttachment:
-      Type: AWS::EC2::VPCGatewayAttachment
-      Properties:
-        VpcId: !Ref VPC
-        InternetGatewayId: !Ref InternetGateway
-
-    ElasticIP:
-      Type: AWS::EC2::EIP
-      Properties:
-        Domain: vpc
-
-    NatGateway:
-      Type: AWS::EC2::NatGateway
-      Properties:
-        AllocationId: !GetAtt ElasticIP.AllocationId
-        SubnetId: !Ref PublicSubnetA
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-nat-gateway
-
-    PublicRouteTable:
-      Type: AWS::EC2::RouteTable
-      Properties:
-        VpcId: !Ref VPC
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-public-rtb
-
-    PublicRoute:
-      Type: AWS::EC2::Route
-      DependsOn: VPCGatewayAttachment
-      Properties:
-        RouteTableId: !Ref PublicRouteTable
-        DestinationCidrBlock: 0.0.0.0/0
-        GatewayId: !Ref InternetGateway
-
-    PublicSubnetARouteTableAssociation:
-      Type: AWS::EC2::SubnetRouteTableAssociation
-      Properties:
-        SubnetId: !Ref PublicSubnetA
-        RouteTableId: !Ref PublicRouteTable
-
-    PublicSubnetBRouteTableAssociation:
-      Type: AWS::EC2::SubnetRouteTableAssociation
-      Properties:
-        SubnetId: !Ref PublicSubnetB
-        RouteTableId: !Ref PublicRouteTable
-
-    PrivateRouteTable:
-      Type: AWS::EC2::RouteTable
-      Properties:
-        VpcId: !Ref VPC
-        Tags:
-          - Key: Name
-            Value: ${self:provider.stackName}-private-rtb
-
-    PrivateRoute:
-      Type: AWS::EC2::Route
-      Properties:
-        RouteTableId: !Ref PrivateRouteTable
-        DestinationCidrBlock: 0.0.0.0/0
-        NatGatewayId: !Ref NatGateway
-
-    PrivateSubnetARouteTableAssociation:
-      Type: AWS::EC2::SubnetRouteTableAssociation
-      Properties:
-        SubnetId: !Ref PrivateSubnetA
-        RouteTableId: !Ref PrivateRouteTable
-
-    PrivateSubnetBRouteTableAssociation:
-      Type: AWS::EC2::SubnetRouteTableAssociation
-      Properties:
-        SubnetId: !Ref PrivateSubnetB
-        RouteTableId: !Ref PrivateRouteTable
-
-    LambdaSecurityGroup:
-      Type: AWS::EC2::SecurityGroup
-      Properties:
-        GroupDescription: 'Allow all outbound traffic for Lambda'
-        VpcId: !Ref VPC
-        SecurityGroupEgress:
-          - CidrIp: 0.0.0.0/0
-            IpProtocol: -1
-
-    S3GatewayEndpoint:
-      Type: AWS::EC2::VPCEndpoint
-      Properties:
-        VpcId: !Ref VPC
-        ServiceName: !Sub 'com.amazonaws.${self:provider.region}.s3'
-        RouteTableIds:
-          - !Ref PrivateRouteTable
-
-    DynamoDBGatewayEndpoint:
-      Type: AWS::EC2::VPCEndpoint
-      Properties:
-        VpcId: !Ref VPC
-        ServiceName: !Sub 'com.amazonaws.${self:provider.region}.dynamodb'
-        RouteTableIds:
-          - !Ref PrivateRouteTable
-
-    # DynamoDB
-    UsersTable:
-      Type: AWS::DynamoDB::Table
-      DeletionPolicy: Retain
-      Properties:
-        TableName: ${self:provider.environment.DYNAMODB_TABLE}
-        BillingMode: PAY_PER_REQUEST
-        AttributeDefinitions:
-          - AttributeName: phone
-            AttributeType: S
-          - AttributeName: deletionStatus
-            AttributeType: N
-        KeySchema:
-          - AttributeName: phone
-            KeyType: HASH
-        GlobalSecondaryIndexes:
-          - IndexName: DeletionStatusIndex
-            KeySchema:
-              - AttributeName: deletionStatus
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
-
-    # DLQs
-    IncomingDLQ:
-      Type: AWS::SQS::Queue
-      Properties:
-        FifoQueue: true
-        QueueName: pakak-${self:provider.stage}-incoming-dlq.fifo
-
-    OutgoingDLQ:
-      Type: AWS::SQS::Queue
-      Properties:
-        FifoQueue: true
-        QueueName: pakak-${self:provider.stage}-outgoing-dlq.fifo
-
-    ScannerDLQ:
-      Type: AWS::SQS::Queue
-      Properties:
-        QueueName: pakak-${self:provider.stage}-scanner-dlq
-
-    # Main FIFO queues
-    IncomingQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        FifoQueue: true
-        QueueName: pakak-${self:provider.stage}-incoming.fifo
-        ContentBasedDeduplication: true
-        RedrivePolicy:
-          deadLetterTargetArn: !GetAtt IncomingDLQ.Arn
-          maxReceiveCount: 3
-
-    OutgoingQueue:
-      Type: AWS::SQS::Queue
-      Properties:
-        FifoQueue: true
-        QueueName: pakak-${self:provider.stage}-outgoing.fifo
-        ContentBasedDeduplication: true
-        RedrivePolicy:
-          deadLetterTargetArn: !GetAtt OutgoingDLQ.Arn
-          maxReceiveCount: 3
-
-    # S3 buckets
-
-    StaticAssetsBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: pakak-${self:provider.stage}-static-assets
-        PublicAccessBlockConfiguration:
-          BlockPublicPolicy: false
-          RestrictPublicBuckets: false
-        VersioningConfiguration:
-          Status: Enabled
-      DeletionPolicy: Retain
-
-    StaticAssetsBucketPolicy:
-      Type: AWS::S3::BucketPolicy
-      Properties:
-        Bucket: !Ref StaticAssetsBucket
-        PolicyDocument:
-          Version: '2012-10-17'
-          Statement:
-            - Effect: Allow
-              Principal: '*'
-              Action: 's3:GetObject'
-              Resource: !Join ['', [!GetAtt StaticAssetsBucket.Arn, '/*']]
-
-    RawBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: pakak-${self:provider.stage}-raw
-        VersioningConfiguration:
-          Status: Enabled
-      DeletionPolicy: Retain
-
-    CleanBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: pakak-${self:provider.stage}-clean
-        VersioningConfiguration:
-          Status: Enabled
-      DeletionPolicy: Retain
-
-    QuarantineBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: pakak-${self:provider.stage}-quarantine
-        VersioningConfiguration:
-          Status: Enabled
-      DeletionPolicy: Retain
-
-    ErrorSnsTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        DisplayName: 'pakak application error alarms'
-        TopicName: pakak-error-alarms-${self:provider.stage}
-
-    SubscriptionEmail1:
-      Type: AWS::SNS::Subscription
-      Properties:
-        TopicArn: !Ref ErrorSnsTopic
-        Protocol: email
-        Endpoint: ${self:custom.notificationEmails.0}
-
-    FirewallErrorMetricFilter:
-      Type: AWS::Logs::MetricFilter
-      Properties:
-        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-firewall'
-        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
-        MetricTransformations:
-          - MetricName: 'firewall_errors'
-            MetricNamespace: 'pakak/application'
-            MetricValue: 1
-
-    HighFirewallErrorAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: !Sub 'pakak-${self:provider.stage}-high-firewall-errors'
-        AlarmDescription: 'Fires when the firewall function logs 5 or more errors in 5 minutes.'
-        Namespace: 'pakak/application'
-        MetricName: 'firewall_errors'
-        Statistic: Sum
-        Period: 300
-        EvaluationPeriods: 1
-        Threshold: 5
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        AlarmActions: [!Ref ErrorSnsTopic]
-        TreatMissingData: notBreaching
-
-    WorkerErrorMetricFilter:
-      Type: AWS::Logs::MetricFilter
-      Properties:
-        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-worker'
-        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
-        MetricTransformations:
-          - MetricName: 'worker_errors'
-            MetricNamespace: 'pakak/application'
-            MetricValue: 1
-
-    HighWorkerErrorAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: !Sub 'pakak-${self:provider.stage}-high-worker-errors'
-        AlarmDescription: 'Fires when the worker function logs 5 or more errors in 5 minutes.'
-        Namespace: 'pakak/application'
-        MetricName: 'worker_errors'
-        Statistic: Sum
-        Period: 300
-        EvaluationPeriods: 1
-        Threshold: 5
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        AlarmActions: [!Ref ErrorSnsTopic]
-        TreatMissingData: notBreaching
-
-    ScannerErrorMetricFilter:
-      Type: AWS::Logs::MetricFilter
-      Properties:
-        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-scanner'
-        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
-        MetricTransformations:
-          - MetricName: 'scanner_errors'
-            MetricNamespace: 'pakak/application'
-            MetricValue: 1
-
-    HighScannerErrorAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: !Sub 'pakak-${self:provider.stage}-high-scanner-errors'
-        AlarmDescription: 'Fires when the scanner function logs 5 or more errors in 5 minutes.'
-        Namespace: 'pakak/application'
-        MetricName: 'scanner_errors'
-        Statistic: Sum
-        Period: 300
-        EvaluationPeriods: 1
-        Threshold: 5
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        AlarmActions: [!Ref ErrorSnsTopic]
-        TreatMissingData: notBreaching
-
-    DispatcherErrorMetricFilter:
-      Type: AWS::Logs::MetricFilter
-      Properties:
-        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-dispatcher'
-        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
-        MetricTransformations:
-          - MetricName: 'dispatcher_errors'
-            MetricNamespace: 'pakak/application'
-            MetricValue: 1
-
-    HighDispatcherErrorAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: !Sub 'pakak-${self:provider.stage}-high-dispatcher-errors'
-        AlarmDescription: 'Fires when the dispatcher function logs 5 or more errors in 5 minutes.'
-        Namespace: 'pakak/application'
-        MetricName: 'dispatcher_errors'
-        Statistic: Sum
-        Period: 300
-        EvaluationPeriods: 1
-        Threshold: 5
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        AlarmActions: [!Ref ErrorSnsTopic]
-        TreatMissingData: notBreaching
-
-    CleanerErrorMetricFilter:
-      Type: AWS::Logs::MetricFilter
-      Properties:
-        LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-cleaner'
-        FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
-        MetricTransformations:
-          - MetricName: 'cleaner_errors'
-            MetricNamespace: 'pakak/application'
-            MetricValue: 1
-
-    HighCleanerErrorAlarm:
-      Type: AWS::CloudWatch::Alarm
-      Properties:
-        AlarmName: !Sub 'pakak-${self:provider.stage}-high-cleaner-errors'
-        AlarmDescription: 'Fires when the cleaner function logs 1 or more errors in 5 minutes.'
-        Namespace: 'pakak/application'
-        MetricName: 'cleaner_errors'
-        Statistic: Sum
-        Period: 300
-        EvaluationPeriods: 1
-        Threshold: 1
-        ComparisonOperator: GreaterThanOrEqualToThreshold
-        AlarmActions: [!Ref ErrorSnsTopic]
-        TreatMissingData: notBreaching
-
-  Outputs:
-    ApiGatewayEndpoint:
-      Description: 'The base URL for the API Gateway endpoint'
-      Value:
-        Fn::Sub: 'https://${ApiGatewayRestApi}.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}'
-      Export:
-        Name: ${self:provider.stackName}-ApiGatewayEndpoint
-
-    NatGatewayPublicIp:
-      Description: 'Public IP address of the NAT Gateway'
-      Value: !Ref ElasticIP
-      Export:
-        Name: ${self:provider.stackName}-NatGatewayIp
+# service: pakak
+
+# variablesResolutionMode: 20210326
+# useDotenv: true
+
+# frameworkVersion: '3'
+
+# # ───────── Global defaults & per-stage naming ─────────
+# provider:
+#   name: aws
+#   runtime: nodejs20.x
+#   region: us-east-1
+#   stage: ${opt:stage, 'dev'}
+#   stackName: pakak-${self:provider.stage}
+
+#   vpc:
+#     securityGroupIds:
+#       - !Ref LambdaSecurityGroup
+#     subnetIds:
+#       - !Ref PrivateSubnetA
+#       - !Ref PrivateSubnetB
+
+#   environment:
+#     APP_STAGE: ${self:provider.stage}
+#     NODE_ENV: ${self:custom.stageEnvs.${self:provider.stage}.NODE_ENV, 'development'}
+#     LOG_LEVEL: ${self:custom.stageEnvs.${self:provider.stage}.LOG_LEVEL, 'debug'}
+
+#     DYNAMODB_TABLE: PakakUsers-${self:provider.stage}
+
+#     MONGODB_URI: ${ssm:/pakak/${self:provider.stage}/MONGODB_URI}
+#     MONGODB_DBNAME: pakak_${self:provider.stage}
+
+#     TWILIO_NUMBER: ${ssm:/pakak/${self:provider.stage}/TWILIO_NUMBER}
+#     TWILIO_MESSAGING_SERVICE_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_MESSAGING_SERVICE_SID}
+#     TWILIO_ACCOUNT_SID: ${ssm:/pakak/${self:provider.stage}/TWILIO_SID}
+#     TWILIO_AUTH_TOKEN: ${ssm:/pakak/${self:provider.stage}/TWILIO_TOKEN}
+
+#     ADMIN_PHONE: ${ssm:/pakak/${self:provider.stage}/ADMIN_PHONE}
+
+#     INCOMING_SQS_QUEUE_URL: !GetAtt IncomingQueue.QueueUrl
+#     OUTGOING_SQS_QUEUE_URL: !GetAtt OutgoingQueue.QueueUrl
+
+#     STATIC_ASSETS_BUCKET_NAME: !Ref StaticAssetsBucket
+#     STATIC_ASSETS_BASE_URL: !Sub 'https://${StaticAssetsBucket}.s3.${self:provider.region}.amazonaws.com'
+#     INUPIAT_VALUES_IMAGE_NAME: 'Inupiat_Ilitqusiat_Values.jpg'
+
+#     RAW_BUCKET_NAME: pakak-${self:provider.stage}-raw
+#     CLEAN_BUCKET_NAME: pakak-${self:provider.stage}-clean
+#     QUARANTINE_BUCKET_NAME: pakak-${self:provider.stage}-quarantine
+
+#     # ClamAV stuff
+#     # Path setting for ClamAV
+#     PATH: '/opt/clamav/bin:$PATH'
+#     LD_LIBRARY_PATH: '$LD_LIBRARY_PATH:/opt/clamav/lib'
+
+#     # environment variables for ClamAV referenced in code
+#     CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
+#     CLAMAV_DB_PATH: /tmp/clamav
+
+#     BIN_DIR: /opt/clamav/bin
+
+#     # Rate limit fields
+#     TTL_FOR_PROCESSING_LOCK: ${ssm:/pakak/${self:provider.stage}/TTL_FOR_PROCESSING_LOCK}
+#     MAX_MESSAGES_PER_WINDOW: ${ssm:/pakak/${self:provider.stage}/MAX_MESSAGES_PER_WINDOW}
+#     RATE_LIMIT_WINDOW_SECONDS: ${ssm:/pakak/${self:provider.stage}/RATE_LIMIT_WINDOW_SECONDS}
+
+#   iam:
+#     role:
+#       statements:
+#         - Effect: Allow
+#           Action:
+#             - ec2:CreateNetworkInterface
+#             - ec2:DescribeNetworkInterfaces
+#             - ec2:DeleteNetworkInterface
+#           Resource: '*'
+
+#         - Effect: Allow
+#           Action:
+#             - dynamodb:GetItem
+#             - dynamodb:PutItem
+#             - dynamodb:UpdateItem
+#             - dynamodb:Scan
+#             - dynamodb:DescribeTable
+#             - dynamodb:Query
+#           Resource:
+#             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}
+#             - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.DYNAMODB_TABLE}/index/DeletionStatusIndex
+
+#         - Effect: Allow
+#           Action: sqs:*
+#           Resource:
+#             - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-incoming.fifo
+#             - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-outgoing.fifo
+#             - arn:aws:sqs:${self:provider.region}:*:pakak-${self:provider.stage}-scanner-dlq
+
+#         - Effect: Allow
+#           Action:
+#             - s3:*
+#           Resource:
+#             - arn:aws:s3:::pakak-${self:provider.stage}-raw/*
+#             - arn:aws:s3:::pakak-${self:provider.stage}-clean/*
+#             - arn:aws:s3:::pakak-${self:provider.stage}-quarantine/*
+#             - arn:aws:s3:::pakak-lambda-layers/*
+#             - arn:aws:s3:::pakak-${self:provider.stage}-raw
+#             - arn:aws:s3:::pakak-${self:provider.stage}-clean
+#             - arn:aws:s3:::pakak-${self:provider.stage}-quarantine
+#             - arn:aws:s3:::pakak-lambda-layers
+
+#         - Effect: Allow
+#           Action: lambda:GetLayerVersion
+#           Resource: ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
+
+# plugins:
+#   - serverless-localstack
+
+# custom:
+#   notificationEmails:
+#     - 'singh.daksh.pratap204@gmail.com'
+
+#   stageEnvs:
+#     prod:
+#       NODE_ENV: production
+#       LOG_LEVEL: info
+#     dev:
+#       NODE_ENV: development
+#       LOG_LEVEL: debug
+
+#   localstackStages:
+#     local: dev
+#     dev: NO_MATCH
+#     prod: NO_MATCH
+
+#   localstack:
+#     host: http://localhost
+#     edgePort: 4566
+#     stages:
+#       - ${self:custom.localstackStages.${opt:stage, self:provider.stage}}
+#     autostart: false
+
+# # ───────── Lambda Functions ─────────
+# functions:
+#   firewall:
+#     handler: dist/functions/firewall/handler.handler
+#     memorySize: 512
+#     timeout: 3
+#     reservedConcurrency: 350
+#     events:
+#       - http:
+#           path: '/webhook'
+#           method: get
+#       - http:
+#           path: '/webhook'
+#           method: post
+
+#   worker:
+#     handler: dist/functions/worker/handler.handler
+#     reservedConcurrency: 450
+#     events:
+#       - sqs:
+#           arn: { 'Fn::GetAtt': [IncomingQueue, Arn] }
+#           batchSize: 1
+#           maximumBatchingWindow: 0
+#           maximumConcurrency: 450
+
+#   scanner:
+#     architecture: arm64
+#     handler: dist/functions/scanner/handler.handler
+#     memorySize: 2048
+#     timeout: 300
+#     events:
+#       - s3:
+#           bucket: pakak-${self:provider.stage}-raw
+#           event: s3:ObjectCreated:*
+#           existing: true
+#     layers:
+#       - ${ssm:/pakak/${self:provider.stage}/CLAMAV_LAYER_ARN}
+#     onError:
+#       Fn::GetAtt: [ScannerDLQ, Arn]
+#     environment:
+#       CLAMAV_DB_S3_BUCKET: pakak-lambda-layers
+#       CLAMAV_DB_PATH: /tmp/clamav
+
+#   dispatcher:
+#     handler: dist/functions/dispatcher/handler.handler
+#     memorySize: 256
+#     timeout: 30
+#     reservedConcurrency: 150
+#     events:
+#       - sqs:
+#           arn: { 'Fn::GetAtt': [OutgoingQueue, Arn] }
+#           batchSize: 1
+#           maximumBatchingWindow: 0
+#           maximumConcurrency: 150
+
+#   cleaner:
+#     handler: dist/functions/cleaner/handler.handler
+#     timeout: 900
+#     reservedConcurrency: 1
+#     events:
+#       - schedule: cron(0 12 * * ? *)
+
+# # ───────── CloudFormation Resources ─────────
+# resources:
+#   Resources:
+#     VPC:
+#       Type: AWS::EC2::VPC
+#       Properties:
+#         CidrBlock: 10.0.0.0/16
+#         EnableDnsSupport: true
+#         EnableDnsHostnames: true
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-vpc
+
+#     PublicSubnetA:
+#       Type: AWS::EC2::Subnet
+#       Properties:
+#         VpcId: !Ref VPC
+#         CidrBlock: 10.0.1.0/24
+#         AvailabilityZone: ${self:provider.region}a
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-public-subnet-a
+
+#     PublicSubnetB:
+#       Type: AWS::EC2::Subnet
+#       Properties:
+#         VpcId: !Ref VPC
+#         CidrBlock: 10.0.2.0/24
+#         AvailabilityZone: ${self:provider.region}b
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-public-subnet-b
+
+#     PrivateSubnetA:
+#       Type: AWS::EC2::Subnet
+#       Properties:
+#         VpcId: !Ref VPC
+#         CidrBlock: 10.0.3.0/24
+#         AvailabilityZone: ${self:provider.region}a
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-private-subnet-a
+
+#     PrivateSubnetB:
+#       Type: AWS::EC2::Subnet
+#       Properties:
+#         VpcId: !Ref VPC
+#         CidrBlock: 10.0.4.0/24
+#         AvailabilityZone: ${self:provider.region}b
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-private-subnet-b
+
+#     InternetGateway:
+#       Type: AWS::EC2::InternetGateway
+#       Properties:
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-igw
+
+#     VPCGatewayAttachment:
+#       Type: AWS::EC2::VPCGatewayAttachment
+#       Properties:
+#         VpcId: !Ref VPC
+#         InternetGatewayId: !Ref InternetGateway
+
+#     ElasticIP:
+#       Type: AWS::EC2::EIP
+#       Properties:
+#         Domain: vpc
+
+#     NatGateway:
+#       Type: AWS::EC2::NatGateway
+#       Properties:
+#         AllocationId: !GetAtt ElasticIP.AllocationId
+#         SubnetId: !Ref PublicSubnetA
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-nat-gateway
+
+#     PublicRouteTable:
+#       Type: AWS::EC2::RouteTable
+#       Properties:
+#         VpcId: !Ref VPC
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-public-rtb
+
+#     PublicRoute:
+#       Type: AWS::EC2::Route
+#       DependsOn: VPCGatewayAttachment
+#       Properties:
+#         RouteTableId: !Ref PublicRouteTable
+#         DestinationCidrBlock: 0.0.0.0/0
+#         GatewayId: !Ref InternetGateway
+
+#     PublicSubnetARouteTableAssociation:
+#       Type: AWS::EC2::SubnetRouteTableAssociation
+#       Properties:
+#         SubnetId: !Ref PublicSubnetA
+#         RouteTableId: !Ref PublicRouteTable
+
+#     PublicSubnetBRouteTableAssociation:
+#       Type: AWS::EC2::SubnetRouteTableAssociation
+#       Properties:
+#         SubnetId: !Ref PublicSubnetB
+#         RouteTableId: !Ref PublicRouteTable
+
+#     PrivateRouteTable:
+#       Type: AWS::EC2::RouteTable
+#       Properties:
+#         VpcId: !Ref VPC
+#         Tags:
+#           - Key: Name
+#             Value: ${self:provider.stackName}-private-rtb
+
+#     PrivateRoute:
+#       Type: AWS::EC2::Route
+#       Properties:
+#         RouteTableId: !Ref PrivateRouteTable
+#         DestinationCidrBlock: 0.0.0.0/0
+#         NatGatewayId: !Ref NatGateway
+
+#     PrivateSubnetARouteTableAssociation:
+#       Type: AWS::EC2::SubnetRouteTableAssociation
+#       Properties:
+#         SubnetId: !Ref PrivateSubnetA
+#         RouteTableId: !Ref PrivateRouteTable
+
+#     PrivateSubnetBRouteTableAssociation:
+#       Type: AWS::EC2::SubnetRouteTableAssociation
+#       Properties:
+#         SubnetId: !Ref PrivateSubnetB
+#         RouteTableId: !Ref PrivateRouteTable
+
+#     LambdaSecurityGroup:
+#       Type: AWS::EC2::SecurityGroup
+#       Properties:
+#         GroupDescription: 'Allow all outbound traffic for Lambda'
+#         VpcId: !Ref VPC
+#         SecurityGroupEgress:
+#           - CidrIp: 0.0.0.0/0
+#             IpProtocol: -1
+
+#     S3GatewayEndpoint:
+#       Type: AWS::EC2::VPCEndpoint
+#       Properties:
+#         VpcId: !Ref VPC
+#         ServiceName: !Sub 'com.amazonaws.${self:provider.region}.s3'
+#         RouteTableIds:
+#           - !Ref PrivateRouteTable
+
+#     DynamoDBGatewayEndpoint:
+#       Type: AWS::EC2::VPCEndpoint
+#       Properties:
+#         VpcId: !Ref VPC
+#         ServiceName: !Sub 'com.amazonaws.${self:provider.region}.dynamodb'
+#         RouteTableIds:
+#           - !Ref PrivateRouteTable
+
+#     # DynamoDB
+#     UsersTable:
+#       Type: AWS::DynamoDB::Table
+#       DeletionPolicy: Retain
+#       Properties:
+#         TableName: ${self:provider.environment.DYNAMODB_TABLE}
+#         BillingMode: PAY_PER_REQUEST
+#         AttributeDefinitions:
+#           - AttributeName: phone
+#             AttributeType: S
+#           - AttributeName: deletionStatus
+#             AttributeType: N
+#         KeySchema:
+#           - AttributeName: phone
+#             KeyType: HASH
+#         GlobalSecondaryIndexes:
+#           - IndexName: DeletionStatusIndex
+#             KeySchema:
+#               - AttributeName: deletionStatus
+#                 KeyType: HASH
+#             Projection:
+#               ProjectionType: ALL
+
+#     # DLQs
+#     IncomingDLQ:
+#       Type: AWS::SQS::Queue
+#       Properties:
+#         FifoQueue: true
+#         QueueName: pakak-${self:provider.stage}-incoming-dlq.fifo
+
+#     OutgoingDLQ:
+#       Type: AWS::SQS::Queue
+#       Properties:
+#         FifoQueue: true
+#         QueueName: pakak-${self:provider.stage}-outgoing-dlq.fifo
+
+#     ScannerDLQ:
+#       Type: AWS::SQS::Queue
+#       Properties:
+#         QueueName: pakak-${self:provider.stage}-scanner-dlq
+
+#     # Main FIFO queues
+#     IncomingQueue:
+#       Type: AWS::SQS::Queue
+#       Properties:
+#         FifoQueue: true
+#         QueueName: pakak-${self:provider.stage}-incoming.fifo
+#         ContentBasedDeduplication: true
+#         RedrivePolicy:
+#           deadLetterTargetArn: !GetAtt IncomingDLQ.Arn
+#           maxReceiveCount: 3
+
+#     OutgoingQueue:
+#       Type: AWS::SQS::Queue
+#       Properties:
+#         FifoQueue: true
+#         QueueName: pakak-${self:provider.stage}-outgoing.fifo
+#         ContentBasedDeduplication: true
+#         RedrivePolicy:
+#           deadLetterTargetArn: !GetAtt OutgoingDLQ.Arn
+#           maxReceiveCount: 3
+
+#     # S3 buckets
+
+#     StaticAssetsBucket:
+#       Type: AWS::S3::Bucket
+#       Properties:
+#         BucketName: pakak-${self:provider.stage}-static-assets
+#         PublicAccessBlockConfiguration:
+#           BlockPublicPolicy: false
+#           RestrictPublicBuckets: false
+#         VersioningConfiguration:
+#           Status: Enabled
+#       DeletionPolicy: Retain
+
+#     StaticAssetsBucketPolicy:
+#       Type: AWS::S3::BucketPolicy
+#       Properties:
+#         Bucket: !Ref StaticAssetsBucket
+#         PolicyDocument:
+#           Version: '2012-10-17'
+#           Statement:
+#             - Effect: Allow
+#               Principal: '*'
+#               Action: 's3:GetObject'
+#               Resource: !Join ['', [!GetAtt StaticAssetsBucket.Arn, '/*']]
+
+#     RawBucket:
+#       Type: AWS::S3::Bucket
+#       Properties:
+#         BucketName: pakak-${self:provider.stage}-raw
+#         VersioningConfiguration:
+#           Status: Enabled
+#       DeletionPolicy: Retain
+
+#     CleanBucket:
+#       Type: AWS::S3::Bucket
+#       Properties:
+#         BucketName: pakak-${self:provider.stage}-clean
+#         VersioningConfiguration:
+#           Status: Enabled
+#       DeletionPolicy: Retain
+
+#     QuarantineBucket:
+#       Type: AWS::S3::Bucket
+#       Properties:
+#         BucketName: pakak-${self:provider.stage}-quarantine
+#         VersioningConfiguration:
+#           Status: Enabled
+#       DeletionPolicy: Retain
+
+#     ErrorSnsTopic:
+#       Type: AWS::SNS::Topic
+#       Properties:
+#         DisplayName: 'pakak application error alarms'
+#         TopicName: pakak-error-alarms-${self:provider.stage}
+
+#     SubscriptionEmail1:
+#       Type: AWS::SNS::Subscription
+#       Properties:
+#         TopicArn: !Ref ErrorSnsTopic
+#         Protocol: email
+#         Endpoint: ${self:custom.notificationEmails.0}
+
+#     FirewallErrorMetricFilter:
+#       Type: AWS::Logs::MetricFilter
+#       Properties:
+#         LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-firewall'
+#         FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+#         MetricTransformations:
+#           - MetricName: 'firewall_errors'
+#             MetricNamespace: 'pakak/application'
+#             MetricValue: 1
+
+#     HighFirewallErrorAlarm:
+#       Type: AWS::CloudWatch::Alarm
+#       Properties:
+#         AlarmName: !Sub 'pakak-${self:provider.stage}-high-firewall-errors'
+#         AlarmDescription: 'Fires when the firewall function logs 5 or more errors in 5 minutes.'
+#         Namespace: 'pakak/application'
+#         MetricName: 'firewall_errors'
+#         Statistic: Sum
+#         Period: 300
+#         EvaluationPeriods: 1
+#         Threshold: 5
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         AlarmActions: [!Ref ErrorSnsTopic]
+#         TreatMissingData: notBreaching
+
+#     WorkerErrorMetricFilter:
+#       Type: AWS::Logs::MetricFilter
+#       Properties:
+#         LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-worker'
+#         FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+#         MetricTransformations:
+#           - MetricName: 'worker_errors'
+#             MetricNamespace: 'pakak/application'
+#             MetricValue: 1
+
+#     HighWorkerErrorAlarm:
+#       Type: AWS::CloudWatch::Alarm
+#       Properties:
+#         AlarmName: !Sub 'pakak-${self:provider.stage}-high-worker-errors'
+#         AlarmDescription: 'Fires when the worker function logs 5 or more errors in 5 minutes.'
+#         Namespace: 'pakak/application'
+#         MetricName: 'worker_errors'
+#         Statistic: Sum
+#         Period: 300
+#         EvaluationPeriods: 1
+#         Threshold: 5
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         AlarmActions: [!Ref ErrorSnsTopic]
+#         TreatMissingData: notBreaching
+
+#     ScannerErrorMetricFilter:
+#       Type: AWS::Logs::MetricFilter
+#       Properties:
+#         LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-scanner'
+#         FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+#         MetricTransformations:
+#           - MetricName: 'scanner_errors'
+#             MetricNamespace: 'pakak/application'
+#             MetricValue: 1
+
+#     HighScannerErrorAlarm:
+#       Type: AWS::CloudWatch::Alarm
+#       Properties:
+#         AlarmName: !Sub 'pakak-${self:provider.stage}-high-scanner-errors'
+#         AlarmDescription: 'Fires when the scanner function logs 5 or more errors in 5 minutes.'
+#         Namespace: 'pakak/application'
+#         MetricName: 'scanner_errors'
+#         Statistic: Sum
+#         Period: 300
+#         EvaluationPeriods: 1
+#         Threshold: 5
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         AlarmActions: [!Ref ErrorSnsTopic]
+#         TreatMissingData: notBreaching
+
+#     DispatcherErrorMetricFilter:
+#       Type: AWS::Logs::MetricFilter
+#       Properties:
+#         LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-dispatcher'
+#         FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+#         MetricTransformations:
+#           - MetricName: 'dispatcher_errors'
+#             MetricNamespace: 'pakak/application'
+#             MetricValue: 1
+
+#     HighDispatcherErrorAlarm:
+#       Type: AWS::CloudWatch::Alarm
+#       Properties:
+#         AlarmName: !Sub 'pakak-${self:provider.stage}-high-dispatcher-errors'
+#         AlarmDescription: 'Fires when the dispatcher function logs 5 or more errors in 5 minutes.'
+#         Namespace: 'pakak/application'
+#         MetricName: 'dispatcher_errors'
+#         Statistic: Sum
+#         Period: 300
+#         EvaluationPeriods: 1
+#         Threshold: 5
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         AlarmActions: [!Ref ErrorSnsTopic]
+#         TreatMissingData: notBreaching
+
+#     CleanerErrorMetricFilter:
+#       Type: AWS::Logs::MetricFilter
+#       Properties:
+#         LogGroupName: !Sub '/aws/lambda/pakak-${self:provider.stage}-cleaner'
+#         FilterPattern: '?ERROR ?error ?Error ?FAIL ?fail ?Fail ?Exception ?exception'
+#         MetricTransformations:
+#           - MetricName: 'cleaner_errors'
+#             MetricNamespace: 'pakak/application'
+#             MetricValue: 1
+
+#     HighCleanerErrorAlarm:
+#       Type: AWS::CloudWatch::Alarm
+#       Properties:
+#         AlarmName: !Sub 'pakak-${self:provider.stage}-high-cleaner-errors'
+#         AlarmDescription: 'Fires when the cleaner function logs 1 or more errors in 5 minutes.'
+#         Namespace: 'pakak/application'
+#         MetricName: 'cleaner_errors'
+#         Statistic: Sum
+#         Period: 300
+#         EvaluationPeriods: 1
+#         Threshold: 1
+#         ComparisonOperator: GreaterThanOrEqualToThreshold
+#         AlarmActions: [!Ref ErrorSnsTopic]
+#         TreatMissingData: notBreaching
+
+#   Outputs:
+#     ApiGatewayEndpoint:
+#       Description: 'The base URL for the API Gateway endpoint'
+#       Value:
+#         Fn::Sub: 'https://${ApiGatewayRestApi}.execute-api.${self:provider.region}.amazonaws.com/${self:provider.stage}'
+#       Export:
+#         Name: ${self:provider.stackName}-ApiGatewayEndpoint
+
+#     NatGatewayPublicIp:
+#       Description: 'Public IP address of the NAT Gateway'
+#       Value: !Ref ElasticIP
+#       Export:
+#         Name: ${self:provider.stackName}-NatGatewayIp

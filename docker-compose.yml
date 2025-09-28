@@ -1,42 +1,42 @@
-services:
-  localstack:
-    image: localstack/localstack:latest
-    container_name: localstack
-    ports:
-      - '4566:4566' # unified edge port
-    environment:
-      - LOCALSTACK_SERVICES=cloudformation,sts,s3,sqs,dynamodb,ssm,events,logs,iam,lambda,apigateway
-      - LOCALSTACK_PERSISTENCE=0
-    volumes:
-      - localstack_data:/var/lib/localstack
-      - '/var/run/docker.sock:/var/run/docker.sock'
+# services:
+#   localstack:
+#     image: localstack/localstack:latest
+#     container_name: localstack
+#     ports:
+#       - '4566:4566' # unified edge port
+#     environment:
+#       - LOCALSTACK_SERVICES=cloudformation,sts,s3,sqs,dynamodb,ssm,events,logs,iam,lambda,apigateway
+#       - LOCALSTACK_PERSISTENCE=0
+#     volumes:
+#       - localstack_data:/var/lib/localstack
+#       - '/var/run/docker.sock:/var/run/docker.sock'
 
-  mongo:
-    image: mongo:6.0
-    container_name: pakak-mongo
-    ports:
-      - '27017:27017'
-    volumes:
-      - mongo_data:/data/db
+#   mongo:
+#     image: mongo:6.0
+#     container_name: pakak-mongo
+#     ports:
+#       - '27017:27017'
+#     volumes:
+#       - mongo_data:/data/db
 
-  app:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: pakak-app
-    working_dir: /app
-    # command: npm run offline
-    command: ['tail', '-f', '/dev/null']
-    # ports:
-    #   - "3000:3000"
-    # env_file:
-    #   - .env.dev
-    volumes:
-      - ./:/app
-    depends_on:
-      - localstack
-      - mongo
+#   app:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: pakak-app
+#     working_dir: /app
+#     # command: npm run offline
+#     command: ['tail', '-f', '/dev/null']
+#     # ports:
+#     #   - "3000:3000"
+#     # env_file:
+#     #   - .env.dev
+#     volumes:
+#       - ./:/app
+#     depends_on:
+#       - localstack
+#       - mongo
 
-volumes:
-  mongo_data:
-  localstack_data:
+# volumes:
+#   mongo_data:
+#   localstack_data:

@@ -1,55 +1,55 @@
-name: Deploy-AWS
+# name: Deploy-AWS
 
-on:
-  workflow_dispatch:
-    inputs:
-      stage:
-        description: 'Deployment stage'
-        required: true
-        default: 'dev'
-        type: choice
-        options:
-          - dev
-          - prod
+# on:
+#   workflow_dispatch:
+#     inputs:
+#       stage:
+#         description: 'Deployment stage'
+#         required: true
+#         default: 'dev'
+#         type: choice
+#         options:
+#           - dev
+#           - prod
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          cache: 'npm'
+#       - name: Setup Node.js
+#         uses: actions/setup-node@v4
+#         with:
+#           node-version: '20.x'
+#           cache: 'npm'
 
-      - name: Install dependencies
-        run: npm ci
+#       - name: Install dependencies
+#         run: npm ci
 
-      - name: Run linter
-        run: |
-          npm run lint
+#       - name: Run linter
+#         run: |
+#           npm run lint
 
-      - name: Run tests
-        run: npm test
+#       - name: Run tests
+#         run: npm test
 
-      - name: Build project
-        run: npm run build
+#       - name: Build project
+#         run: npm run build
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
+#       - name: Configure AWS credentials
+#         uses: aws-actions/configure-aws-credentials@v2
+#         with:
+#           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+#           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+#           aws-region: ${{ secrets.AWS_REGION || 'us-east-1' }}
 
-      - name: Install Serverless Framework
-        run: npm install --location=global serverless@^3.40.0
+#       - name: Install Serverless Framework
+#         run: npm install --location=global serverless@^3.40.0
 
-      - name: Deploy to AWS
-        env:
-          SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
-        run: npx serverless deploy --stage ${{ github.event.inputs.stage }} --verbose
+#       - name: Deploy to AWS
+#         env:
+#           SERVERLESS_ACCESS_KEY: ${{ secrets.SERVERLESS_ACCESS_KEY }}
+#         run: npx serverless deploy --stage ${{ github.event.inputs.stage }} --verbose
