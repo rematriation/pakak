@@ -37,7 +37,7 @@ This table stores user-specific information, including their subscription status
 
 ## **AWS Setup Procedure \- Serverless**
 
-The entire infrastructure is defined as code using the Serverless Framework, which translates the serverless.yml configuration into an AWS CloudFormation stack.
+The entire infrastructure is defined as code using the **Serverless Framework**, which translates the `serverless.yml` configuration into an **AWS CloudFormation** stack.
 
 ### **1\. Core Infrastructure Deployment**
 
@@ -101,3 +101,21 @@ Final configuration steps involve connecting the deployed AWS infrastructure to 
    * Upload the `Inupiat_Ilitqusiat_Values.jpg` image to the root of this bucket. The bucket policy is configured for public read access, so no additional steps are needed to make it visible.
 
 Once these steps are complete, the application is fully deployed. Incoming messages will trigger the entire workflow within the secure VPC environment.
+
+## Project Teardown Procedure
+
+TODO: document how to disable, disassociate, and uninstall an AWS instance.
+
+### Remove Elastic IP Addresses
+
+> An Elastic IP address is a reserved public IP address that you can assign to any EC2 instance in a particular region, until you choose to release it. To allocate an Elastic IP address to your account in a particular region. (AWS Docs)
+
+AWS Charges you for every EIP you have which is not used. By "not used", the IP address is not *associated* to any resource, such as the NAT Gateway for the app.
+
+To **release** (*=delete*) an Elastic IP, follow these steps:
+
+1. Go to the EC2 console
+2. Search and navigate to the **Elastic IP** section
+3. Select the IP address you wish to remove
+4. Click on actions and choose **Release Address**.
+  - **NOTE**: If the option Release Address is greyed out, it means that the IP address you've selected is still *associated* with a resource. If this is the case, **Disassociate Address** first, then release the address.
