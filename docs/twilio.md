@@ -1,4 +1,4 @@
-# Nalukataq's Twilio Config &amp; Important Details
+# Pakak's Twilio Config &amp; Important Details
 
 - **Brand**: Charity NPO via Aqqaluk Trust
 - **A2P Messaging Plan**: Standard.

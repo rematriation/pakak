@@ -1,4 +1,4 @@
-# Nalukataq Design Stack Rationale
+# Pakak Design Stack Rationale
 
 ## Architecture and Message Flow
 
