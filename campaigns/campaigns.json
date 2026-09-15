@@ -3,13 +3,13 @@
     "_id": "user_profile_creation",
     "name": "User Profile Creation Flow",
     "description": "Collects user's name, village, and zip code.",
-    "initialMessage": "Let's personalize your experience! What's your full name?",
+    "initialMessage": "Uvlaallautaq! Let's pakak before the workshop! What's your full name?",
     "fallbackMessage": "I didn't get that. Please provide a valid answer for the current question.",
     "timeoutMessage": "It seems you're busy. Your profile update session has ended. You can start a new one anytime.",
     "steps": [
       {
         "stepId": "ask_name",
-        "prompt": "Let's personalize your experience! What's your first and last name?",
+        "prompt": "Uvlaallautaq! What's your first and last name?",
         "expectedResponseType": "TEXT",
         "validationRegex": "^[A-Za-z.'-]+(?:\\s+[A-Za-z.'-]+)+$",
         "nextStepId": "ask_village",
@@ -23,7 +23,7 @@
         "validationRegex": "^[A-Za-z\\s.'-]+$",
         "nextStepId": "ask_zipcode",
         "fieldName": "village",
-        "fallbackMessage": "I didn't get a valid village name. Please tell me which village you're from."
+        "fallbackMessage": "Oops. Something didn't work. Please tell me which village you're from."
       },
       {
         "stepId": "ask_zipcode",
@@ -65,7 +65,7 @@
         "validationRegex": "^image\/(jpeg|jpg|gif|png|heic|heif|tiff|bmp)$",
         "nextStepId": "ask_knows_time",
         "fieldName": "image_url",
-        "fallbackMessage": "That doesn't look like a picture."
+        "fallbackMessage": "Hmmm. That doesn't look like a picture. Make sure it is an image file."
       },
       {
         "stepId": "ask_for_picture_again",

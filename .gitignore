@@ -149,5 +149,4 @@ jest-cache/
 .DS_Store
 Thumbs.db
 pakakExport.mongodb.js
-docs/mongodb.md
 docs/assets/mongodb/Network Access _ Cloud_ MongoDB Cloud.pdf

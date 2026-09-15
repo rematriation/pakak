@@ -1,8 +1,8 @@
-# **Amazon Web Services**
+# Pakak's Amazon Web Services (AWS)
 
 Documenting AWS configuration information and other important details.
 
-## **1\. Broader Design Rationale**
+## Design Rationale
 
 The architecture is designed as a serverless, event-driven system to process a high volume of incoming SMS/MMS messages from users via Twilio. The primary goal is to create a system that is scalable, resilient, secure, and cost-effective, leveraging managed AWS services to minimize operational overhead.
 
@@ -14,13 +14,14 @@ The architecture is designed as a serverless, event-driven system to process a h
   * **Malware Scanning:** Media files are processed in an isolated "raw" bucket before being scanned for malware using a ClamAV layer in the scanner Lambda. Files are then moved to a "clean" or "quarantine" location, preventing malicious content from propagating through the system.  
 * **Resilience and Fault Tolerance:** The use of SQS queues with Dead-Letter Queues (DLQs) ensures that messages are not lost if a processing function fails. Failed messages are automatically moved to a DLQ for later inspection and reprocessing, which prevents a single bad message from halting the entire pipeline. The scanner function is also configured with an onError destination to handle specific scanning failures.
 
-## **Why use AWS?**
+## Why use AWS?
 
 * **Cost-Effectiveness (Pay-Per-Use):** The serverless model is extremely cost-efficient for this workload. We only pay for the compute time we consume, the number of messages in SQS, and the data stored in DynamoDB/S3. There are no costs for idle resources, which is a significant advantage over provisioned servers.  
 * **Managed Services & Reduced Operational Overhead:** AWS manages the underlying infrastructure for Lambda, API Gateway, SQS, S3, DynamoDB, and the VPC components. This eliminates the need for server patching, OS maintenance, and other traditional operational tasks, allowing the development team to focus on application logic.  
 * **High Availability and Durability:** AWS services are designed for high availability and are deployed across multiple Availability Zones (AZs) by default. This provides built-in fault tolerance. S3, in particular, offers industry-leading durability for stored media files.
 
 ## DynamoDB Data Model
+
 ### `PakakUsers` Table
 This table stores user-specific information, including their subscription status, rate-limiting data, and processing locks. It is designed for fast, key-value lookups, which is essential for the synchronous checks performed by the `firewall` Lambda. The partition key is the user's phone number in E.164 format. A Global Secondary Index on the `awaitingDeletion` attribute allows the `cleaner` Lambda to efficiently find and process users flagged for deletion.
 
@@ -35,34 +36,35 @@ This table stores user-specific information, including their subscription status
 | `createdAt`                | String  | An ISO 8601 timestamp for when the user record was created.                 |
 | `updatedAt`                | String  | An ISO 8601 timestamp for when the user record was last updated.              |
 
-## **AWS Setup Procedure \- Serverless**
+## SETUP: How to Setup Pakak as an AWS Serverless App
 
 The entire infrastructure is defined as code using the **Serverless Framework**, which translates the `serverless.yml` configuration into an **AWS CloudFormation** stack.
 
-### **1\. Core Infrastructure Deployment**
+### 1. Deploy core infrastructure
 
 This phase provisions the foundational AWS resources. The deployment is executed by running: 
+
 ```npx serverless deploy --stage <your_stage_name>```
 
-The procedure is as follows:
+The deployment procedure is as follows:
 
-1. **Install and Configure Serverless Framework:** Ensure you have the Serverless Framework CLI installed and configured with AWS credentials that have permissions to create the necessary resources.  
-2. **Deploy the Stack:** Navigate to the project root directory and execute 
-"npx serverless deploy \--stage \<your\_stage\_name\>." This command will automatically provision the following resources as defined in serverless.yml:  
+1. **Install and Configure Serverless Framework:** Ensure you have the Serverless Framework CLI installed and configured with AWS credentials that have permissions to create the necessary resources.
+   * TODO: Breakdown this procedure.
+2. **Deploy the Stack:** Navigate to the project root directory and execute: "npx serverless deploy \--stage \<your\_stage\_name\>." This command will automatically provision the following resources as defined in `serverless.yml`:
    * **VPC and Networking:** A complete virtual private cloud is created for network isolation, including:  
      * A VPC with public and private subnets across two Availability Zones.  
      * An Internet Gateway for public subnet access and a NAT Gateway with an Elastic IP to provide stable outbound internet access for resources in the private subnets.  
      * Route tables to manage traffic flow.  
      * A LambdaSecurityGroup that allows all outbound traffic from the Lambda functions.  
    * **IAM Roles:** An execution role for all Lambda functions, granting specific permissions to interact with the VPC, DynamoDB, SQS, S3, and SSM.  
-   * **DynamoDB Table:** The PakakUsers table is created with a phone hash key and a Global Secondary Index for querying users pending deletion. The billing mode is set to PAY\_PER\_REQUEST.  
-   * **S3 Buckets:** Four S3 buckets are created: pakak-raw, pakak-clean, pakak-quarantine, and a pakak-static-assets bucket for public-facing assets.  
+   * **DynamoDB Table:** The PakakUsers table is created with a phone hash key and a Global Secondary Index for querying users pending deletion. The billing mode is set to `PAY\_PER\_REQUEST`.
+   * **S3 Buckets:** Four S3 buckets are created: `pakak-raw`, `pakak-clean`, `pakak-quarantine`, and a `pakak-static-assets` bucket for public-facing assets.
    * **SQS Queues:** Three primary queues and their corresponding Dead-Letter Queues (DLQs) are provisioned:  
      * pakak-incoming.fifo & pakak-incoming-dlq.fifo: For messages awaiting processing.  
      * pakak-outgoing.fifo & pakak-outgoing-dlq.fifo: For bot replies awaiting delivery.  
      * pakak-scanner-dlq: A standard DLQ for the scanner Lambda's onError destination.
 
-### **2\. Lambda Function and API Gateway Deployment**
+### 2. Lambda Function and API Gateway Deployment
 
 The same serverless deploy command also deploys the application code and connects the triggers.
 
@@ -75,7 +77,7 @@ The same serverless deploy command also deploys the application code and connect
 2. **API Gateway Endpoint:** An API Gateway REST API is created with a /webhook endpoint (GET and POST) that routes to the firewall Lambda.  
 3. **Output API URL:** After a successful deployment, the Serverless Framework will output the invoke URL for the API Gateway endpoint.
 
-### **3\. External Service Configuration (Twilio & SSM)**
+### 3. External Service Configuration (Twilio & SSM)
 
 Final configuration steps involve connecting the deployed AWS infrastructure to external services.
 
@@ -102,7 +104,7 @@ Final configuration steps involve connecting the deployed AWS infrastructure to 
 
 Once these steps are complete, the application is fully deployed. Incoming messages will trigger the entire workflow within the secure VPC environment.
 
-## Project Teardown Procedure
+## TEARDOWN: How to Teardown a Pakak Project
 
 TODO: document how to disable, disassociate, and uninstall an AWS instance.
 
